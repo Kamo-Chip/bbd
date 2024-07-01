@@ -175,7 +175,7 @@ const isBallInHole = () => {
   const dy = ball.y - hole.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
 
-  return distance < hole.radius + ball.radius;
+  return distance < hole.radius - ball.radius;
 };
 
 const resetGame = () => {
