@@ -70,9 +70,9 @@ function draw() {
 }
 
 function handleOrientation(event) {
-  const maxTilt = 45; // Maximum tilt angle to avoid too much speed
-  ball.dx = (event.gamma / maxTilt) * 5; // gamma is the left-to-right tilt
-  ball.dy = (event.beta / maxTilt) * 5; // beta is the front-to-back tilt
+  ball.dx = event.gamma * 5; // gamma is the left-to-right tilt
+  ball.dy = event.beta * 5; // beta is the front-to-back tilt
+  alert(event.alpha);
 }
 
 function permission() {
