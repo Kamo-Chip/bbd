@@ -8,6 +8,10 @@ function handleOrientation(event) {
 }
 
 function onClick() {
+  if (!DeviceOrientationEvent.requestPermission) {
+    alert("No orientation event");
+    return;
+  }
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
     // Handle iOS 13+ devices.
     DeviceOrientationEvent.requestPermission()
