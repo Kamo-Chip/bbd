@@ -1,17 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Ball Tilt Game</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <canvas id="gameCanvas" width="600" height="600"></canvas>
-  <button id="startButton">Start Game</button>
-  <span id="gamma">gamma</span>
-  <span id="alpha">alpha</span>
-  <span id="beta">beta</span>
-  <script src="script.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ball Tilt Game</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <canvas id="gameCanvas" width="600" height="600"></canvas>
+    <button id="startButton">Start Game</button>
+    <div class="position">
+      <span>Gamma: </span>
+      <span id="gamma">0</span>
+    </div>
+    <div class="position">
+      <span>Alpha: </span>
+      <span id="alpha">0</span>
+    </div>
+    <div class="position">
+      <span>Beta: </span>
+      <span id="beta">0</span>
+    </div>
+
+    <script src="script.js"></script>
+  </body>
 </html>
