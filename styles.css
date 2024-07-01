@@ -1,20 +1,30 @@
 body {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-    margin: 0;
-    background-color: #f0f0f0;
-  }
-  
-  canvas {
-    border: 2px solid #000;
-  }
-  
-  button {
-    margin-top: 20px;
-    padding: 10px 20px;
-    font-size: 16px;
-  }
-  
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  margin: 0;
+  background-color: #f0f0f0;
+  perspective: 1000px;
+}
+
+canvas {
+  border: 2px solid #000;
+  max-width: 300px;
+  border: 1px solid black;
+  display: block;
+  margin: 0 auto;
+  transform-style: preserve-3d;
+}
+
+button {
+  margin-top: 20px;
+  padding: 10px 20px;
+  font-size: 16px;
+}
+
+.position {
+  display: flex;
+  flex-direction: row;
+}
