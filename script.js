@@ -117,14 +117,51 @@ const drawHole = () => {
 };
 
 const updateBallPosition = () => {
-  ball.x += ball.dx;
-  ball.y += ball.dy;
+  let nextX = ball.x + ball.dx;
+  let nextY = ball.y + ball.dy;
 
   // Prevent ball from moving out of canvas
-  if (ball.x < ball.radius) ball.x = ball.radius;
-  if (ball.x > canvas.width - ball.radius) ball.x = canvas.width - ball.radius;
-  if (ball.y < ball.radius) ball.y = ball.radius;
-  if (ball.y > canvas.height - ball.radius) ball.y = canvas.height - ball.radius;
+  if (nextX < ball.radius) nextX = ball.radius;
+  if (nextX > canvas.width - ball.radius) nextX = canvas.width - ball.radius;
+  if (nextY < ball.radius) nextY = ball.radius;
+  if (nextY > canvas.height - ball.radius) nextY = canvas.height - ball.radius;
+
+  // Check for collision with walls
+  const col = Math.floor(nextX / cellSize);
+  const row = Math.floor(nextY / cellSize);
+
+  if (col >= 0 && col < cols && row >= 0 && row < rows) {
+    const cell = cells[col][row];
+
+    if (cell) {
+      // Collision with top wall
+      if (ball.dy < 0 && cell.walls.top && nextY - ball.radius < row * cellSize) {
+        nextY = row * cellSize + ball.radius;
+        ball.dy = 0;
+      }
+
+      // Collision with bottom wall
+      if (ball.dy > 0 && cell.walls.bottom && nextY + ball.radius > (row + 1) * cellSize) {
+        nextY = (row + 1) * cellSize - ball.radius;
+        ball.dy = 0;
+      }
+
+      // Collision with left wall
+      if (ball.dx < 0 && cell.walls.left && nextX - ball.radius < col * cellSize) {
+        nextX = col * cellSize + ball.radius;
+        ball.dx = 0;
+      }
+
+      // Collision with right wall
+      if (ball.dx > 0 && cell.walls.right && nextX + ball.radius > (col + 1) * cellSize) {
+        nextX = (col + 1) * cellSize - ball.radius;
+        ball.dx = 0;
+      }
+    }
+  }
+
+  ball.x = nextX;
+  ball.y = nextY;
 
   // Check if ball is in the hole
   if (isBallInHole()) {
