@@ -75,20 +75,45 @@ function handleOrientation(event) {
   ball.dy = (event.beta / maxTilt) * 5; // beta is the front-to-back tilt
 }
 
-function onClick() {
-  if (typeof DeviceOrientationEvent.requestPermission === "function") {
-    // Handle iOS 13+ devices.
-    DeviceOrientationEvent.requestPermission()
-      .then((state) => {
-        if (state === "granted") {
-          window.addEventListener("deviceorientation", handleOrientation);
-        } else {
-          console.error("Request to access the orientation was rejected");
+function permission() {
+  if (
+    typeof DeviceMotionEvent !== "undefined" &&
+    typeof DeviceMotionEvent.requestPermission === "function"
+  ) {
+    // (optional) Do something before API request prompt.
+    DeviceMotionEvent.requestPermission()
+      .then((response) => {
+        // (optional) Do something after API prompt dismissed.
+        if (response == "granted") {
+          window.addEventListener("devicemotion", (e) => {
+            // do something for 'e' here.
+          });
         }
       })
       .catch(console.error);
   } else {
-    // Handle regular non iOS 13+ devices.
+    alert("DeviceMotionEvent is not defined");
+  }
+}
+
+function onClick() {
+  if (
+    typeof DeviceMotionEvent !== "undefined" &&
+    typeof DeviceMotionEvent.requestPermission === "function"
+  ) {
+    // (optional) Do something before API request prompt.
+    DeviceMotionEvent.requestPermission()
+      .then((response) => {
+        // (optional) Do something after API prompt dismissed.
+        if (response == "granted") {
+          window.addEventListener("devicemotion", (e) => {
+            // do something for 'e' here.
+          });
+        }
+      })
+      .catch(console.error);
+  } else {
+    alert("DeviceMotionEvent is not defined");
     window.addEventListener("deviceorientation", handleOrientation);
   }
 }
