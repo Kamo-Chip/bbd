@@ -2,6 +2,8 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const startButton = document.getElementById("startButton");
 
+const socket = io();
+
 const ball = {
   x: 20,
   y: 20,
@@ -18,11 +20,17 @@ const hole = {
   color: "black",
 };
 
+const xCoord = Math.random() * canvas.width;
+const yCoord = Math.random() * canvas.height;
+let colors = ["red", "blue", "green"];
+let colorIndex = Math.floor(Math.random() * 3);
+let hasGameStarted = false;
+
 const cellSize = 40;
 const cols = Math.floor(canvas.width / cellSize);
 const rows = Math.floor(canvas.height / cellSize);
 const cells = [];
-const pen = canvas.getContext('2d');
+const pen = canvas.getContext("2d");
 
 class Cell {
   constructor(x, y) {
@@ -37,17 +45,20 @@ class Cell {
     const y = this.y * cellSize;
     pen.beginPath();
     if (this.walls.top) pen.moveTo(x, y), pen.lineTo(x + cellSize, y);
-    if (this.walls.right) pen.moveTo(x + cellSize, y), pen.lineTo(x + cellSize, y + cellSize);
-    if (this.walls.bottom) pen.moveTo(x + cellSize, y + cellSize), pen.lineTo(x, y + cellSize);
+    if (this.walls.right)
+      pen.moveTo(x + cellSize, y), pen.lineTo(x + cellSize, y + cellSize);
+    if (this.walls.bottom)
+      pen.moveTo(x + cellSize, y + cellSize), pen.lineTo(x, y + cellSize);
     if (this.walls.left) pen.moveTo(x, y + cellSize), pen.lineTo(x, y);
-    pen.strokeStyle = 'green';
+    pen.strokeStyle = "green";
     pen.lineWidth = 5;
-    pen.lineCap = 'round';
+    pen.lineCap = "round";
     pen.stroke();
   }
 }
 
 function setup() {
+  initBoard();
   for (let x = 0; x < cols; x++) {
     cells[x] = [];
     for (let y = 0; y < rows; y++) {
@@ -59,19 +70,28 @@ function setup() {
 
 function genMaze(x, y) {
   const stack = [];
-  const directions = ['top', 'right', 'bottom', 'left'];
+  const directions = ["top", "right", "bottom", "left"];
   const getNewCoords = (x, y, dir) => {
     switch (dir) {
-      case 'top': return [x, y - 1];
-      case 'right': return [x + 1, y];
-      case 'bottom': return [x, y + 1];
-      case 'left': return [x - 1, y];
+      case "top":
+        return [x, y - 1];
+      case "right":
+        return [x + 1, y];
+      case "bottom":
+        return [x, y + 1];
+      case "left":
+        return [x - 1, y];
     }
   };
 
   const removeWalls = (current, next, dir) => {
     current.walls[dir] = false;
-    const opposite = { top: 'bottom', right: 'left', bottom: 'top', left: 'right' };
+    const opposite = {
+      top: "bottom",
+      right: "left",
+      bottom: "top",
+      left: "right",
+    };
     next.walls[opposite[dir]] = false;
   };
 
@@ -83,14 +103,23 @@ function genMaze(x, y) {
     const current = stack[stack.length - 1];
     const [cx, cy] = [current.x, current.y];
     const unvisitedNeighbors = directions
-      .map(dir => {
+      .map((dir) => {
         const [nx, ny] = getNewCoords(cx, cy, dir);
-        return (nx >= 0 && ny >= 0 && nx < cols && ny < rows && !cells[nx][ny].visited) ? { dir, cell: cells[nx][ny] } : null;
+        return nx >= 0 &&
+          ny >= 0 &&
+          nx < cols &&
+          ny < rows &&
+          !cells[nx][ny].visited
+          ? { dir, cell: cells[nx][ny] }
+          : null;
       })
       .filter(Boolean);
 
     if (unvisitedNeighbors.length) {
-      const { dir, cell } = unvisitedNeighbors[Math.floor(Math.random() * unvisitedNeighbors.length)];
+      const { dir, cell } =
+        unvisitedNeighbors[
+          Math.floor(Math.random() * unvisitedNeighbors.length)
+        ];
       removeWalls(current, cell, dir);
       cell.visited = true;
       stack.push(cell);
@@ -103,7 +132,15 @@ function genMaze(x, y) {
 const drawBall = () => {
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-  ctx.fillStyle = ball.color;
+  ctx.fillStyle = colors[colorIndex];
+  ctx.fill();
+  ctx.closePath();
+};
+
+const drawBallSpecific = (x, y, color) => {
+  ctx.beginPath();
+  ctx.arc(x, y, ball.radius, 0, Math.PI * 2);
+  ctx.fillStyle = color;
   ctx.fill();
   ctx.closePath();
 };
@@ -135,25 +172,41 @@ const updateBallPosition = () => {
 
     if (cell) {
       // Collision with top wall
-      if (ball.dy < 0 && cell.walls.top && nextY - ball.radius < row * cellSize) {
+      if (
+        ball.dy < 0 &&
+        cell.walls.top &&
+        nextY - ball.radius < row * cellSize
+      ) {
         nextY = row * cellSize + ball.radius;
         ball.dy = 0;
       }
 
       // Collision with bottom wall
-      if (ball.dy > 0 && cell.walls.bottom && nextY + ball.radius > (row + 1) * cellSize) {
+      if (
+        ball.dy > 0 &&
+        cell.walls.bottom &&
+        nextY + ball.radius > (row + 1) * cellSize
+      ) {
         nextY = (row + 1) * cellSize - ball.radius;
         ball.dy = 0;
       }
 
       // Collision with left wall
-      if (ball.dx < 0 && cell.walls.left && nextX - ball.radius < col * cellSize) {
+      if (
+        ball.dx < 0 &&
+        cell.walls.left &&
+        nextX - ball.radius < col * cellSize
+      ) {
         nextX = col * cellSize + ball.radius;
         ball.dx = 0;
       }
 
       // Collision with right wall
-      if (ball.dx > 0 && cell.walls.right && nextX + ball.radius > (col + 1) * cellSize) {
+      if (
+        ball.dx > 0 &&
+        cell.walls.right &&
+        nextX + ball.radius > (col + 1) * cellSize
+      ) {
         nextX = (col + 1) * cellSize - ball.radius;
         ball.dx = 0;
       }
@@ -168,6 +221,9 @@ const updateBallPosition = () => {
     alert("You win!");
     resetGame();
   }
+
+  // Emit ball position to the server
+  socket.emit("ballMove", { x: ball.x, y: ball.y });
 };
 
 const isBallInHole = () => {
@@ -186,17 +242,19 @@ const resetGame = () => {
   setup();
 };
 
-const draw = () => {
+const initBoard = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
+};
+const draw = () => {
   for (let x = 0; x < cols; x++) {
     for (let y = 0; y < rows; y++) {
       cells[x][y].show();
     }
   }
   drawHole();
-  drawBall();
+  // drawBall();
   updateBallPosition();
-  requestAnimationFrame(draw);
+  //requestAnimationFrame(draw);
 };
 
 const handleOrientation = (event) => {
@@ -217,7 +275,7 @@ const handleOrientation = (event) => {
 `;
 };
 
-const onClick = () => {
+const getDeviceOrientation = () => {
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
     // Handle iOS 13+ devices.
     DeviceOrientationEvent.requestPermission()
@@ -236,11 +294,20 @@ const onClick = () => {
 };
 
 startButton.addEventListener("click", () => {
-  onClick();
-  resetGame();
+  getDeviceOrientation();
   draw();
+  socket.emit("join", {
+    id: "",
+    x: xCoord,
+    y: yCoord,
+    color: colors[colorIndex],
+  });
 });
+``;
 
+socket.on("plotPlayers", (data) => {
+  console.log(data);
+  data.map((b) => drawBallSpecific(b.x, b.y, b.color));
+});
 // Initial setup
 setup();
-draw();
