@@ -2,14 +2,13 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const startButton = document.getElementById("startButton");
 
-const ball = {
-  x: 20,
-  y: 20,
-  radius: 10,
-  color: "blue",
-  dx: 0,
-  dy: 0,
-};
+// Define the balls with unique initial positions and colors
+const balls = [
+  { x: 20, y: 20, radius: 10, color: "blue", dx: 0, dy: 0, isWinner: false },
+  { x: 580, y: 20, radius: 10, color: "red", dx: 0, dy: 0, isWinner: false },
+  { x: 20, y: 580, radius: 10, color: "green", dx: 0, dy: 0, isWinner: false },
+  { x: 300, y: 300, radius: 10, color: "yellow", dx: 0, dy: 0, isWinner: false },
+];
 
 const hole = {
   x: canvas.width - 20,
@@ -100,7 +99,7 @@ function genMaze(x, y) {
   }
 }
 
-const drawBall = () => {
+const drawBall = (ball) => {
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
   ctx.fillStyle = ball.color;
@@ -116,7 +115,7 @@ const drawHole = () => {
   ctx.closePath();
 };
 
-const updateBallPosition = () => {
+const updateBallPosition = (ball) => {
   let nextX = ball.x + ball.dx;
   let nextY = ball.y + ball.dy;
 
@@ -164,13 +163,16 @@ const updateBallPosition = () => {
   ball.y = nextY;
 
   // Check if ball is in the hole
-  if (isBallInHole()) {
-    alert("You win!");
-    resetGame();
+  if (isBallInHole(ball)) {
+    if (!ball.isWinner) {
+      ball.isWinner = true;
+      alert(`${ball.color} wins!`);
+      resetGame();
+    }
   }
 };
 
-const isBallInHole = () => {
+const isBallInHole = (ball) => {
   const dx = ball.x - hole.x;
   const dy = ball.y - hole.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
@@ -179,11 +181,63 @@ const isBallInHole = () => {
 };
 
 const resetGame = () => {
-  ball.x = 20;
-  ball.y = 20;
-  ball.dx = 0;
-  ball.dy = 0;
+  // Define the predefined positions of the balls
+  const initialPositions = [
+    { x: 20, y: 20 },
+    { x: 580, y: 20 },
+    { x: 20, y: 580 },
+    { x: 300, y: 300 }
+  ];
+
+  // Reset each ball's position, velocity, and win status
+  balls.forEach((ball, index) => {
+    ball.x = initialPositions[index].x;
+    ball.y = initialPositions[index].y;
+    ball.dx = 0;
+    ball.dy = 0;
+    ball.isWinner = false;
+  });
+
   setup();
+};
+
+
+const detectBallCollisions = () => {
+  for (let i = 0; i < balls.length; i++) {
+    for (let j = i + 1; j < balls.length; j++) {
+      const ball1 = balls[i];
+      const ball2 = balls[j];
+      const dx = ball2.x - ball1.x;
+      const dy = ball2.y - ball1.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const minDist = ball1.radius + ball2.radius;
+
+      if (distance < minDist) {
+        // Collision detected, adjust velocities
+        const angle = Math.atan2(dy, dx);
+        const sin = Math.sin(angle);
+        const cos = Math.cos(angle);
+
+        // Simple elastic collision response
+        const vx1 = ball1.dx;
+        const vy1 = ball1.dy;
+        const vx2 = ball2.dx;
+        const vy2 = ball2.dy;
+
+        ball1.dx = vx2;
+        ball1.dy = vy2;
+        ball2.dx = vx1;
+        ball2.dy = vy1;
+
+        // Adjust positions to prevent overlap
+        const overlap = 0.5 * (minDist - distance);
+        ball1.x -= overlap * cos;
+        ball1.y -= overlap * sin;
+        ball2.x += overlap * cos;
+        ball2.y += overlap * sin;
+      }
+    }
+  }
 };
 
 const draw = () => {
@@ -194,15 +248,24 @@ const draw = () => {
     }
   }
   drawHole();
-  drawBall();
-  updateBallPosition();
+  balls.forEach(ball => drawBall(ball));
+  balls.forEach(ball => updateBallPosition(ball));
+  detectBallCollisions();
   requestAnimationFrame(draw);
 };
 
 const handleOrientation = (event) => {
   const maxTilt = 45; // Maximum tilt angle to avoid too much speed
-  ball.dx = (event.gamma / maxTilt) * 5; // gamma is the left-to-right tilt
-  ball.dy = (event.beta / maxTilt) * 5; // beta is the front-to-back tilt
+  
+  const mazeTiltX = (event.gamma / maxTilt) * 5; // gamma is the left-to-right tilt
+  const mazeTiltY = (event.beta / maxTilt) * 5; // beta is the front-to-back tilt
+
+  balls.forEach(ball => {
+    ball.dx = mazeTiltX;
+    ball.dy = mazeTiltY;
+  });
+
+  canvas.style.transform = `rotateY(${event.gamma}deg) rotateX(${-event.beta}deg)`;
 
   const alphaSpan = document.querySelector("#alpha");
   const betaSpan = document.querySelector("#beta");
@@ -211,10 +274,6 @@ const handleOrientation = (event) => {
   alphaSpan.textContent = event.alpha.toFixed(2);
   betaSpan.textContent = event.beta.toFixed(2);
   gammaSpan.textContent = event.gamma.toFixed(2);
-
-  canvas.style.transform = `
-  rotateY(${event.gamma / 2}deg) rotateX(${-event.beta / 2}deg)
-`;
 };
 
 const onClick = () => {
