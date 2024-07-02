@@ -303,4 +303,3 @@ startButton.addEventListener("click", () => {
 
 // Initial setup
 setup();
-draw();
