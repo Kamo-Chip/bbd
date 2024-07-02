@@ -7,12 +7,15 @@ const server = http.createServer(app);
 const io = socketIo(server);
 
 const users = [];
-
+const initCoords = {
+  blue: { x: 10, y: 10 },
+  red: { x: 290, y: 10 },
+  purple: { x: 10, y: 290 },
+  green: { x: 150, y: 10 },
+};
 app.use(express.static(__dirname));
 
 const PORT = 3000;
-
-let hasGameStarted = false;
 
 const cellSize = 20;
 const cols = Math.floor(300 / cellSize); // Adjust based on canvas width
@@ -109,11 +112,17 @@ io.on("connection", (socket) => {
   io.emit("grid", cells);
 
   socket.on("join", (data) => {
-    const { x, y, color } = data;
+    const { color } = data;
 
-    users.push({ x, y, color, id: socket.id });
-    console.log(users);
+    const coords = initCoords[color];
+
+    users.push({ x: coords.x, y: coords.y, color, id: socket.id });
+
     io.emit("plotPlayers", users);
+  });
+
+  socket.on("ballMove", (data) => {
+    console.log(data);
   });
 
   socket.on("disconnect", () => {

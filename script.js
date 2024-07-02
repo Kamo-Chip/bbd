@@ -21,10 +21,10 @@ const hole = {
   color: "black",
 };
 
-const xCoord = Math.random() * 300;
-const yCoord = Math.random() * 300;
-let colors = ["red", "blue", "green"];
-let colorIndex = Math.floor(Math.random() * 3);
+const xCoord = 10;
+const yCoord = 290;
+let colors = ["red", "blue", "green", "purple"];
+let colorIndex = Math.floor(Math.random() * 4);
 
 const cellSize = 20;
 const cols = Math.floor(300 / cellSize);
@@ -161,7 +161,7 @@ const updateBallPosition = () => {
     resetGame();
   }
 
-  // Emit ball position to the server
+  // // Emit ball position to the server
   socket.emit("ballMove", { x: ball.x, y: ball.y });
 };
 
@@ -184,16 +184,19 @@ const resetGame = () => {
 const initBoard = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 };
-const draw = () => {
+
+const plotGrid = () => {
   for (let x = 0; x < cols; x++) {
     for (let y = 0; y < rows; y++) {
       cells[x][y].show();
     }
   }
   drawHole();
-  // drawBall();
+};
+
+const draw = () => {
   updateBallPosition();
-  //requestAnimationFrame(draw);
+  requestAnimationFrame(draw);
 };
 
 const handleOrientation = (event) => {
@@ -234,7 +237,7 @@ const getDeviceOrientation = () => {
 
 startButton.addEventListener("click", () => {
   getDeviceOrientation();
-  draw();
+  plotGrid();
   socket.emit("startGame");
 });
 
@@ -243,15 +246,18 @@ joinButton.addEventListener("click", () => {
   draw();
   socket.emit("join", {
     id: "",
-    x: xCoord,
-    y: yCoord,
     color: colors[colorIndex],
   });
 });
 
 socket.on("plotPlayers", (data) => {
   console.log(data);
-  data.map((b) => drawBallSpecific(b.x, b.y, b.color));
+  data.map((b) => {
+    ball.x = b.x;
+    ball.y = b.y;
+    ball.color = b.color;
+    drawBallSpecific(b.x, b.y, b.color);
+  });
 });
 
 socket.on("grid", (data) => {
@@ -273,3 +279,4 @@ socket.on("grid", (data) => {
 });
 // Initial setup
 setup();
+requestAnimationFrame(draw);
