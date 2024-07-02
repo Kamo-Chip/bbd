@@ -1,13 +1,14 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const startButton = document.getElementById("startButton");
+const isHard = false;
 
 // Define the balls with unique initial positions and colors
 const balls = [
   { x: 20, y: 20, radius: 10, color: "blue", dx: 0, dy: 0, isWinner: false },
   { x: canvas.width - 20, y: 20, radius: 10, color: "red", dx: 0, dy: 0, isWinner: false },
-  { x: 20, y: canvas.width - 20, radius: 10, color: "green", dx: 0, dy: 0, isWinner: false },
-  { x: canvas.width/2, y: 20, radius: 10, color: "purple", dx: 0, dy: 0, isWinner: false },
+  { x: 20, y: canvas.width - 20, radius: 10, color: "yellow", dx: 0, dy: 0, isWinner: false },
+  { x: canvas.width/2, y: 20, radius: 10, color: "green", dx: 0, dy: 0, isWinner: false },
 ];
 
 const hole = {
@@ -39,7 +40,7 @@ class Cell {
     if (this.walls.right) pen.moveTo(x + cellSize, y), pen.lineTo(x + cellSize, y + cellSize);
     if (this.walls.bottom) pen.moveTo(x + cellSize, y + cellSize), pen.lineTo(x, y + cellSize);
     if (this.walls.left) pen.moveTo(x, y + cellSize), pen.lineTo(x, y);
-    pen.strokeStyle = 'green';
+    pen.strokeStyle = 'black';
     pen.lineWidth = 5;
     pen.lineCap = 'round';
     pen.stroke();
@@ -186,7 +187,7 @@ const resetGame = () => {
     { x: 20, y: 20 },
     { x: 580, y: 20 },
     { x: 20, y: 580 },
-    { x: 300, y: 300 }
+    { x: 300, y: 20 }
   ];
 
   // Reset each ball's position, velocity, and win status
