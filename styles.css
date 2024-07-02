@@ -11,7 +11,8 @@ body {
 
 canvas {
   border: 2px solid #000;
-  max-width: 300px;
+  max-width: 70vw;
+  max-height: 70vh;
   border: 1px solid black;
   display: block;
   margin: 0 auto;
