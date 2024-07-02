@@ -1,6 +1,7 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const startButton = document.getElementById("startButton");
+const backButton = document.getElementById("backButton");
 const userName = localStorage.getItem('userName');
 const selectedColor = localStorage.getItem('selectedColor');
 
@@ -253,6 +254,10 @@ startButton.addEventListener("click", () => {
   onClick();
   resetGame();
   draw();
+});
+
+backButton.addEventListener("click", () => {
+    window.location.href = 'home.html';
 });
 
 // Initial setup

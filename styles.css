@@ -24,6 +24,12 @@ button {
   font-size: 16px;
 }
 
+#backButton{
+  position:fixed;
+  top: 10px;
+  left:10px;
+}
+
 .position {
   display: flex;
   flex-direction: row;
