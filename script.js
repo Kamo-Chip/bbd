@@ -20,17 +20,16 @@ const hole = {
 };
 
 if (userName && selectedColor) {
-      // Display user info
+  // Display user info
   document.getElementById('userName').innerHTML = `Username: <strong>${userName}</strong>`;
   document.getElementById('userColor').innerHTML = `Color: <strong>${selectedColor}</strong>`;
 
-      // Optionally, use the color in the game
-        ball.color = selectedColor;
+  // Optionally, use the color in the game
+    ball.color = selectedColor;
   
-
-      // Clear localStorage
-      localStorage.removeItem('userName');
-      localStorage.removeItem('selectedColor');
+  // Clear localStorage
+  localStorage.removeItem('userName');
+  localStorage.removeItem('selectedColor');
 }
 
 const cellSize = 40;
