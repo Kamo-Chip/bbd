@@ -10,7 +10,7 @@ body {
 }
 
 canvas {
-  max-width: 400px;
+  max-width: 300px;
   transform-style: preserve-3d;
 }
 
