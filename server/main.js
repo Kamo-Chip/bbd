@@ -1,5 +1,5 @@
 
-const socket = io()
+const socket = io("http://localhost:8080")
 let players = []; // All players in the game
 let currentPlayer; // Player object for individual players
 
@@ -14,11 +14,16 @@ const ball = {
   dx: 0,
   dy: 0,
 };
+const xCoord = Math.random()*canvas.width;
+const yCoord = Math.random()*canvas.height;
+let colors = ['red','blue','green'];
+let colorIndex = Math.floor(Math.random()*(3));
+let hasGameStarted = false;
 
-function drawBall() {
+function drawBall(xCoord, yCoord, ballColor) {
   ctx.beginPath();
-  ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-  ctx.fillStyle = ball.color;
+  ctx.arc(xCoord, yCoord, ball.radius, 0, Math.PI * 2);
+  ctx.fillStyle = ballColor;
   ctx.fill();
   ctx.closePath();
 }
@@ -33,12 +38,13 @@ function updateBallPosition() {
   if (ball.y < ball.radius) ball.y = ball.radius;
   if (ball.y > canvas.height - ball.radius) ball.y = canvas.height - ball.radius;
 }
-
-function draw() {
+function initBoard(){
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawBall();
-  updateBallPosition();
-  requestAnimationFrame(draw);
+}
+function draw() {
+    drawBall(xCoord, yCoord, colors[colorIndex]);
+    updateBallPosition();
+ // requestAnimationFrame(draw);
 }
 
 function handleOrientation(event) {
@@ -71,6 +77,22 @@ function onClick() {
 
 startButton.addEventListener("click", () => {
   onClick();
-  draw();
-  socket.emit("join", ball.x);
+  draw()
+  socket.emit("join", {ballX: xCoord, ballY: yCoord, ballColor:colors[colorIndex], gameStarted: true});
+});
+
+
+//initialize board
+initBoard();
+
+//listen to server events
+socket.on('joined', (msg) => {
+  console.log(msg);
+  let ul = document.getElementById("socket1");
+  let item = document.createElement("li");
+  item.textContent = msg['socket'];
+  console.log(hasGameStarted)
+  drawBall(msg['message']['ballX'], msg['message']['ballY'], msg['message']['ballColor'])
+  ul.appendChild(item)
+
 });

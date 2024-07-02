@@ -19,7 +19,8 @@ io.on('connection', (socket) => {
     });
 
     socket.on('join', (msg) => {
-        console.log('user joineddd ' +  msg);
+        console.log(msg);
+        io.emit('joined', {message: msg, socket: socket.id})
       });
   })
 
