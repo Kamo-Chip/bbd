@@ -5,15 +5,15 @@ const startButton = document.getElementById("startButton");
 // Define the balls with unique initial positions and colors
 const balls = [
   { x: 20, y: 20, radius: 10, color: "blue", dx: 0, dy: 0, isWinner: false },
-  { x: 580, y: 20, radius: 10, color: "red", dx: 0, dy: 0, isWinner: false },
-  { x: 20, y: 580, radius: 10, color: "green", dx: 0, dy: 0, isWinner: false },
-  { x: 300, y: 300, radius: 10, color: "yellow", dx: 0, dy: 0, isWinner: false },
+  { x: canvas.width - 20, y: 20, radius: 10, color: "red", dx: 0, dy: 0, isWinner: false },
+  { x: 20, y: canvas.width - 20, radius: 10, color: "green", dx: 0, dy: 0, isWinner: false },
+  { x: canvas.width/2, y: 20, radius: 10, color: "purple", dx: 0, dy: 0, isWinner: false },
 ];
 
 const hole = {
   x: canvas.width - 20,
   y: canvas.height - 20,
-  radius: 15,
+  radius: 16,
   color: "black",
 };
 
