@@ -6,9 +6,7 @@ body {
     align-items: center;
     height: 100vh;
     margin: 0;
-    background: linear-gradient(-45deg,#ee7752,#e73c7e,#8A2BE2);
-	background-size:500% 100%;
-	animation: gradient 15s linear infinite; 
+    background-color: #f0f0f0;
     font-family:'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif
 }
 
