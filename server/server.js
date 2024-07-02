@@ -9,6 +9,10 @@ app.get('/', function(req, res) {
    res.sendfile('index.html');
 });
 
+app.get('/menu', function(req, res) {
+  res.sendfile('menu.html');
+});
+
 // Players array
 let users = [];
 

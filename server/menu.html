@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile View Container</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #f0f0f0;
+        }
+
+        .container {
+            width: 90%;
+            max-width: 700px;
+            padding: 20px;
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            text-align: center;
+        }
+
+        .container h1 {
+            margin: 0 0 20px;
+            font-size: 24px;
+        }
+
+        .container p {
+            margin: 0 0 10px;
+            font-size: 16px;
+        }
+
+        @media (min-width: 768px) {
+            .container {
+                width: 70%;
+            }
+        }
+
+        .canvas-board {
+            background-color: #fff;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tilt-a-Maze</h1>
+        <p>This is a responsive container for mobile view.</p>
+        <button>
+            <a href="http://localhost:8080">Start Game</a>
+        </button>
+        <canvas class="canvas-board" id="gameCanvas" width="600" height="600"></canvas>
+  <button id="startButton">Start Game</button>
+  <span id="gamma">gamma</span>
+  <span id="alpha">alpha</span>
+  <span id="beta">beta</span>
+  <ul id="socket1"></ul>
+  <script src="/socket.io/socket.io.js"></script>
+  <script type="text/javascript" src="main.js"></script>
+    </div>
+</body>
+</html>
