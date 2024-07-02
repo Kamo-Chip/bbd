@@ -1,59 +1,60 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const startButton = document.getElementById("startButton");
+const joinButton = document.getElementById("joinButton");
 
 const socket = io();
 
 const ball = {
   x: 20,
   y: 20,
-  radius: 10,
+  radius: 5,
   color: "blue",
   dx: 0,
   dy: 0,
 };
 
 const hole = {
-  x: canvas.width - 20,
-  y: canvas.height - 20,
-  radius: 15,
+  x: 300 - 10,
+  y: 300 - 10,
+  radius: 7,
   color: "black",
 };
 
-const xCoord = Math.random() * canvas.width;
-const yCoord = Math.random() * canvas.height;
+const xCoord = Math.random() * 300;
+const yCoord = Math.random() * 300;
 let colors = ["red", "blue", "green"];
 let colorIndex = Math.floor(Math.random() * 3);
-let hasGameStarted = false;
 
-const cellSize = 40;
-const cols = Math.floor(canvas.width / cellSize);
-const rows = Math.floor(canvas.height / cellSize);
-const cells = [];
+const cellSize = 20;
+const cols = Math.floor(300 / cellSize);
+const rows = Math.floor(300 / cellSize);
+let cells = [];
 const pen = canvas.getContext("2d");
 
 class Cell {
-  constructor(x, y) {
+  constructor(x, y, walls) {
     this.x = x;
     this.y = y;
-    this.visited = false;
-    this.walls = { top: true, right: true, bottom: true, left: true };
+    this.walls = walls;
   }
 
   show() {
-    const x = this.x * cellSize;
-    const y = this.y * cellSize;
-    pen.beginPath();
-    if (this.walls.top) pen.moveTo(x, y), pen.lineTo(x + cellSize, y);
-    if (this.walls.right)
-      pen.moveTo(x + cellSize, y), pen.lineTo(x + cellSize, y + cellSize);
-    if (this.walls.bottom)
-      pen.moveTo(x + cellSize, y + cellSize), pen.lineTo(x, y + cellSize);
-    if (this.walls.left) pen.moveTo(x, y + cellSize), pen.lineTo(x, y);
-    pen.strokeStyle = "green";
-    pen.lineWidth = 5;
-    pen.lineCap = "round";
-    pen.stroke();
+    if (this.walls) {
+      const x = this.x * cellSize;
+      const y = this.y * cellSize;
+      pen.beginPath();
+      if (this.walls.top) pen.moveTo(x, y), pen.lineTo(x + cellSize, y);
+      if (this.walls.right)
+        pen.moveTo(x + cellSize, y), pen.lineTo(x + cellSize, y + cellSize);
+      if (this.walls.bottom)
+        pen.moveTo(x + cellSize, y + cellSize), pen.lineTo(x, y + cellSize);
+      if (this.walls.left) pen.moveTo(x, y + cellSize), pen.lineTo(x, y);
+      pen.strokeStyle = "green";
+      pen.lineWidth = 2;
+      pen.lineCap = "round";
+      pen.stroke();
+    }
   }
 }
 
@@ -63,68 +64,6 @@ function setup() {
     cells[x] = [];
     for (let y = 0; y < rows; y++) {
       cells[x][y] = new Cell(x, y);
-    }
-  }
-  genMaze(0, 0);
-}
-
-function genMaze(x, y) {
-  const stack = [];
-  const directions = ["top", "right", "bottom", "left"];
-  const getNewCoords = (x, y, dir) => {
-    switch (dir) {
-      case "top":
-        return [x, y - 1];
-      case "right":
-        return [x + 1, y];
-      case "bottom":
-        return [x, y + 1];
-      case "left":
-        return [x - 1, y];
-    }
-  };
-
-  const removeWalls = (current, next, dir) => {
-    current.walls[dir] = false;
-    const opposite = {
-      top: "bottom",
-      right: "left",
-      bottom: "top",
-      left: "right",
-    };
-    next.walls[opposite[dir]] = false;
-  };
-
-  const startCell = cells[x][y];
-  startCell.visited = true;
-  stack.push(startCell);
-
-  while (stack.length) {
-    const current = stack[stack.length - 1];
-    const [cx, cy] = [current.x, current.y];
-    const unvisitedNeighbors = directions
-      .map((dir) => {
-        const [nx, ny] = getNewCoords(cx, cy, dir);
-        return nx >= 0 &&
-          ny >= 0 &&
-          nx < cols &&
-          ny < rows &&
-          !cells[nx][ny].visited
-          ? { dir, cell: cells[nx][ny] }
-          : null;
-      })
-      .filter(Boolean);
-
-    if (unvisitedNeighbors.length) {
-      const { dir, cell } =
-        unvisitedNeighbors[
-          Math.floor(Math.random() * unvisitedNeighbors.length)
-        ];
-      removeWalls(current, cell, dir);
-      cell.visited = true;
-      stack.push(cell);
-    } else {
-      stack.pop();
     }
   }
 }
@@ -296,6 +235,12 @@ const getDeviceOrientation = () => {
 startButton.addEventListener("click", () => {
   getDeviceOrientation();
   draw();
+  socket.emit("startGame");
+});
+
+joinButton.addEventListener("click", () => {
+  getDeviceOrientation();
+  draw();
   socket.emit("join", {
     id: "",
     x: xCoord,
@@ -303,11 +248,28 @@ startButton.addEventListener("click", () => {
     color: colors[colorIndex],
   });
 });
-``;
 
 socket.on("plotPlayers", (data) => {
   console.log(data);
   data.map((b) => drawBallSpecific(b.x, b.y, b.color));
+});
+
+socket.on("grid", (data) => {
+  // console.log(data);
+  data.forEach((cell, colNum) => {
+    console.log(`\n\nColumn: ${colNum}`, cell);
+    cell.map((entry, rowNum) => {
+      console.log(`Entry: ${rowNum}`, entry);
+      cells[rowNum][colNum] = new Cell(entry.x, entry.y, entry.walls);
+    });
+  });
+
+  console.log(cells);
+  // cells = data.map((col) =>
+  //   col.map((cell) => new Cell(cell.x, cell.y, cell.walls))
+  // );
+  // console.log(cells);
+  // resetGame();
 });
 // Initial setup
 setup();
