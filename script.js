@@ -1,12 +1,13 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const startButton = document.getElementById("startButton");
+const userName = localStorage.getItem('userName');
+const selectedColor = localStorage.getItem('selectedColor');
 
 const ball = {
   x: 20,
   y: 20,
   radius: 10,
-  color: "blue",
   dx: 0,
   dy: 0,
 };
@@ -17,6 +18,20 @@ const hole = {
   radius: 15,
   color: "black",
 };
+
+if (userName && selectedColor) {
+      // Display user info
+  document.getElementById('userName').innerHTML = `Username: <strong>${userName}</strong>`;
+  document.getElementById('userColor').innerHTML = `Color: <strong>${selectedColor}</strong>`;
+
+      // Optionally, use the color in the game
+        ball.color = selectedColor;
+  
+
+      // Clear localStorage
+      localStorage.removeItem('userName');
+      localStorage.removeItem('selectedColor');
+}
 
 const cellSize = 40;
 const cols = Math.floor(canvas.width / cellSize);
