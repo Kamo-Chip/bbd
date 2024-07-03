@@ -130,7 +130,7 @@ io.on("connection", (socket) => {
     users = users.map((user) => (user.id === data.id ? data : user));
 
     // Emit the updated user list to all clients
-    socket.broadcast.emit("plotPlayers", users);
+    io.emit("plotPlayers", users);
   });
 
   socket.on("disconnect", () => {
@@ -140,5 +140,6 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("plotPlayers", users);
   });
 });
+
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
