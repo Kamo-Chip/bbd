@@ -31,6 +31,7 @@ const cols = Math.floor(300 / cellSize); // Adjust based on canvas width
 const rows = Math.floor(300 / cellSize); // Adjust based on canvas height
 let cells = [];
 let isGameOver = false;
+let isGameStarted = false;
 
 class Cell {
   constructor(x, y) {
@@ -217,6 +218,7 @@ const isBallInHole = (ball) => {
   const dy = ball.y - hole.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
   isGameOver = true;
+  isGameStarted = false;
   return distance < hole.radius + ball.radius - 5;
 };
 
@@ -243,6 +245,7 @@ io.on("connection", (socket) => {
   io.emit("grid", cells);
 
   socket.on("startGame", () => {
+    isGameStarted = true;
     io.emit("gameStarted");
   });
 
@@ -253,32 +256,34 @@ io.on("connection", (socket) => {
   });
 
   socket.on("tilt", (data) => {
-    const { playerId, xTilt, yTilt, beta, gamma } = data;
-    tiltValues[playerId] = { xTilt, yTilt, beta, gamma };
+    if (isGameStarted) {
+      const { playerId, xTilt, yTilt, beta, gamma } = data;
+      tiltValues[playerId] = { xTilt, yTilt, beta, gamma };
 
-    let totalXTilt = 0;
-    let totalYTilt = 0;
-    let totalGamma = 0;
-    let totalBeta = 0;
-    let numPlayers = 0;
+      let totalXTilt = 0;
+      let totalYTilt = 0;
+      let totalGamma = 0;
+      let totalBeta = 0;
+      let numPlayers = 0;
 
-    for (let id in tiltValues) {
-      totalXTilt += tiltValues[id].xTilt;
-      totalYTilt += tiltValues[id].yTilt;
-      totalGamma += tiltValues[id].gamma;
-      totalBeta += tiltValues[id].beta;
-      numPlayers++;
+      for (let id in tiltValues) {
+        totalXTilt += tiltValues[id].xTilt;
+        totalYTilt += tiltValues[id].yTilt;
+        totalGamma += tiltValues[id].gamma;
+        totalBeta += tiltValues[id].beta;
+        numPlayers++;
+      }
+
+      const avgXTilt = totalXTilt / numPlayers;
+      const avgYTilt = totalYTilt / numPlayers;
+      const avgGamma = totalGamma / numPlayers;
+      const avgBeta = totalBeta / numPlayers;
+
+      updateBallsPosition(avgXTilt, avgYTilt);
+      checkWin();
+      io.emit("tiltCanvas", { avgGamma, avgBeta });
+      io.emit("plotPlayers", users);
     }
-
-    const avgXTilt = totalXTilt / numPlayers;
-    const avgYTilt = totalYTilt / numPlayers;
-    const avgGamma = totalGamma / numPlayers;
-    const avgBeta = totalBeta / numPlayers;
-
-    updateBallsPosition(avgXTilt, avgYTilt);
-    checkWin();
-    io.emit("tiltCanvas", { avgGamma, avgBeta });
-    io.emit("plotPlayers", users);
   });
 
   socket.on("disconnect", () => {
