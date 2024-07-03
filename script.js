@@ -72,7 +72,7 @@ const drawHole = () => {
   ctx.closePath();
 };
 
-const dampingFactor = 0.1;
+const dampingFactor = 0;
 const updateBallPosition = (ball) => {
   let nextX = ball.x + ball.dx;
   let nextY = ball.y + ball.dy;
@@ -135,16 +135,21 @@ const updateBallPosition = (ball) => {
 
   const hasMoved = ball.x !== nextX && ball.y !== nextY;
 
-  ball.x = nextX;
-  ball.y = nextY;
-
   // Check if ball is in the hole
   if (isBallInHole(ball)) {
     socket.emit(`${ball.color} wins!`);
   }
 
   if (hasMoved) {
-    socket.emit("ballMove", ball);
+    socket.emit("ballMove", {
+      x: nextX,
+      y: nextY,
+      radius: ball.radius,
+      color: ball.color,
+      dx: ball.dx,
+      dy: ball.dy,
+      id: ball.id,
+    });
   }
 };
 
@@ -219,25 +224,34 @@ const detectBallCollisions = () => {
   }
 };
 
+const fps = 60;
+
 const draw = () => {
   ctx.clearRect(0, 0, 300, 300);
   plotGrid();
   drawHole();
+
   balls.forEach((ball) => drawBall(ball));
-  balls.forEach((ball) => updateBallPosition(ball));
+
   detectBallCollisions();
+
   requestAnimationFrame(draw);
 };
 
+const speedFactor = 2;
 const handleOrientation = (event) => {
   const maxTilt = 30; // Maximum tilt angle to avoid too much speed
 
-  const mazeTiltX = event.gamma / maxTilt; // gamma is the left-to-right tilt
-  const mazeTiltY = event.beta / maxTilt; // beta is the front-to-back tilt
+  const mazeTiltX = (event.gamma / maxTilt) * speedFactor; // gamma is the left-to-right tilt
+  const mazeTiltY = (event.beta / maxTilt) * speedFactor; // beta is the front-to-back tilt
 
   balls.forEach((ball) => {
     ball.dx = mazeTiltX;
     ball.dy = mazeTiltY;
+  });
+
+  balls.forEach((ball) => {
+    updateBallPosition(ball);
   });
 
   canvas.style.transform = `rotateY(${
@@ -278,17 +292,13 @@ startButton.addEventListener("click", () => {
 joinButton.addEventListener("click", () => {
   getDeviceOrientation();
   joinButton.style.display = "none";
-  console.log(".fdsfsd");
   socket.emit("join");
 });
 
 socket.on("plotPlayers", (data) => {
   balls = data;
   console.log(data);
-  console.log(balls);
-  // balls.forEach((ball) => {
-  //   drawBall(ball);
-  // });
+  data.forEach((ball) => drawBall(ball));
 });
 
 socket.on("gameStarted", () => {

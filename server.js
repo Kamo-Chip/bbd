@@ -120,7 +120,6 @@ io.on("connection", (socket) => {
 
   socket.on("join", () => {
     users.push({ ...balls[users.length], id: socket.id });
-    console.log(users);
     io.emit("plotPlayers", users);
   });
 
@@ -128,9 +127,9 @@ io.on("connection", (socket) => {
     console.log(data);
     // Update the user data for the moving ball
     users = users.map((user) => (user.id === data.id ? data : user));
-
+    console.log(users);
     // Emit the updated user list to all clients
-    socket.broadcast.emit("plotPlayers", users);
+    io.emit("plotPlayers", users);
   });
 
   socket.on("disconnect", () => {
