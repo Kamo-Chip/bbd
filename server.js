@@ -218,13 +218,13 @@ const isBallInHole = (ball) => {
   const dy = ball.y - hole.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
   isGameOver = true;
-  isGameStarted = false;
   return distance < hole.radius + ball.radius - 5;
 };
 
 const checkWin = () => {
   users.forEach((user) => {
     if (isBallInHole(user)) {
+      isGameStarted = false;
       io.emit("announceWinner", user);
     }
   });
@@ -256,7 +256,9 @@ io.on("connection", (socket) => {
   });
 
   socket.on("tilt", (data) => {
+    console.log(isGameStarted);
     if (isGameStarted) {
+      console.log(data);
       const { playerId, xTilt, yTilt, beta, gamma } = data;
       tiltValues[playerId] = { xTilt, yTilt, beta, gamma };
 
