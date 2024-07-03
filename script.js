@@ -8,6 +8,7 @@ const socket = io();
 
 let deviceId;
 let color;
+let isHost = false;
 
 // Define the balls with unique initial positions and colors
 let balls = [];
@@ -162,6 +163,10 @@ joinButton.addEventListener("click", () => {
   joinButton.style.display = "none";
 
   socket.emit("join");
+});
+
+socket.on("assignHost", (data) => {
+  console.log(data);
 });
 
 socket.on("plotPlayers", (data) => {

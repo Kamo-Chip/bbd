@@ -246,6 +246,8 @@ io.on("connection", (socket) => {
   console.log("User connected: ", socket.id);
   socket.emit("assignID", socket.id);
 
+  socket.emit("assignHost", !users.length ? true : false);
+
   socket.on("genMaze", () => {
     setup();
     io.emit("grid", cells);
@@ -265,7 +267,11 @@ io.on("connection", (socket) => {
     }
 
     const availableBall = getAvailableBall();
-    users.push({ ...availableBall, id: socket.id });
+    users.push({
+      ...availableBall,
+      id: socket.id,
+    });
+
     socket.emit("assignColor", availableBall.color);
     console.log("Users: ", users);
     io.emit("plotPlayers", users);

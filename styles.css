@@ -1,3 +1,15 @@
+@font-face {
+  font-family: rebellionSquad;
+  src: url("/fonts/RebellionSquad-ZpprZ.ttf");
+}
+
+h2 {
+  font-family: rebellionSquad;
+  font-size: 45px;
+  color: #00585f;
+  padding-bottom: -10px;
+}
+
 body {
   display: flex;
   flex-direction: column;
@@ -7,27 +19,30 @@ body {
   margin: 0;
   background-color: #f0f0f0;
   perspective: 1000px;
-  font-family: monospace;
+  font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
+    "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
 }
 
 canvas {
-  border: 2px solid #000;
-  border: 1px solid black;
+  border: 2px solid black;
   display: block;
   margin: 0 auto;
   transform-style: preserve-3d;
+  background-color: #ebe6e0;
 }
 
 button {
   margin-top: 20px;
+  border: 2px solid black;
   padding: 10px 20px;
   font-size: 16px;
-  font-family: monospace;
+  font-family: "Lucida Sans", "Lucida Sans Regular", "Lucida Grande",
+    "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
   min-width: 150px;
   border-radius: 10px;
-  border: none;
-  background-color: #000;
+  background-color: #00585f;
   color: #fff;
+  font-size: 16px;
   cursor: pointer;
 }
 
