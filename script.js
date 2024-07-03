@@ -147,6 +147,7 @@ const getDeviceOrientation = () => {
 
 startButton.addEventListener("click", () => {
   socket.emit("startGame");
+  socket.emit("resetGame")
 });
 
 joinButton.addEventListener("click", () => {

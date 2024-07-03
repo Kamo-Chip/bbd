@@ -9,14 +9,15 @@ const io = socketIo(server);
 let hasGameStarted = false;
 
 let users = [];
-const balls = [
+let tilts = []; // Store tilts from each client
+
+const initialBalls = [
   { x: 10, y: 10, radius: 5, color: "blue", dx: 0, dy: 0 },
   { x: 290, y: 10, radius: 5, color: "red", dx: 0, dy: 0 },
   { x: 10, y: 290, radius: 5, color: "yellow", dx: 0, dy: 0 },
   { x: 150, y: 10, radius: 5, color: "green", dx: 0, dy: 0 },
 ];
-
-let tilts = []; // Store tilts from each client
+let balls = JSON.parse(JSON.stringify(initialBalls));
 
 app.use(express.static(__dirname));
 
@@ -107,30 +108,76 @@ function genMaze(x, y) {
   }
 }
 
+function resetGame() {
+  balls = JSON.parse(JSON.stringify(initialBalls));
+  tilts = [];
+  setup();
+  io.emit("grid", cells);
+  io.emit("plotPlayers", balls);
+}
+
 // Initialize the maze
 setup();
+
+function detectBallCollisions() {
+  for (let i = 0; i < balls.length; i++) {
+    for (let j = i + 1; j < balls.length; j++) {
+      const ball1 = balls[i];
+      const ball2 = balls[j];
+      const dx = ball2.x - ball1.x;
+      const dy = ball2.y - ball1.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const minDist = ball1.radius + ball2.radius;
+
+      if (distance < minDist) {
+        // Collision detected, adjust velocities
+        const angle = Math.atan2(dy, dx);
+        const sin = Math.sin(angle);
+        const cos = Math.cos(angle);
+
+        // Simple elastic collision response
+        const vx1 = ball1.dx;
+        const vy1 = ball1.dy;
+        const vx2 = ball2.dx;
+        const vy2 = ball2.dy;
+
+        ball1.dx = vx2;
+        ball1.dy = vy2;
+        ball2.dx = vx1;
+        ball2.dy = vy1;
+
+        // Adjust positions to prevent overlap
+        const overlap = 0.5 * (minDist - distance);
+        ball1.x -= overlap * cos;
+        ball1.y -= overlap * sin;
+        ball2.x += overlap * cos;
+        ball2.y += overlap * sin;
+      }
+    }
+  }
+}
 
 function updateBallPositions() {
   if (tilts.length === 0) return;
 
-  const totalTilt = tilts.reduce(
-    (acc, tilt) => {
-      acc.x += tilt.x;
-      acc.y += tilt.y;
-      return acc;
-    },
-    { x: 0, y: 0 }
-  );
+  const totalTilt = { x: 0, y: 0 };
+  tilts.forEach(tilt => {
+    totalTilt.x += tilt.x;
+    totalTilt.y += tilt.y;
+  });
 
   const avgTilt = {
     x: totalTilt.x / tilts.length,
     y: totalTilt.y / tilts.length,
   };
 
-  const dampingFactor = 0.1;
+  const speedFactor = 5;
   balls.forEach((ball) => {
-    let nextX = ball.x + avgTilt.x;
-    let nextY = ball.y + avgTilt.y;
+    ball.dx = avgTilt.x * speedFactor;
+    ball.dy = avgTilt.y * speedFactor;
+
+    let nextX = ball.x + ball.dx;
+    let nextY = ball.y + ball.dy;
 
     // Prevent ball from moving out of canvas
     if (nextX < ball.radius) nextX = ball.radius;
@@ -153,7 +200,7 @@ function updateBallPositions() {
           nextY - ball.radius < row * cellSize
         ) {
           nextY = row * cellSize + ball.radius;
-          ball.dy = -ball.dy * dampingFactor;
+          ball.dy = -ball.dy;
         }
 
         // Collision with bottom wall
@@ -163,7 +210,7 @@ function updateBallPositions() {
           nextY + ball.radius > (row + 1) * cellSize
         ) {
           nextY = (row + 1) * cellSize - ball.radius;
-          ball.dy = -ball.dy * dampingFactor;
+          ball.dy = -ball.dy;
         }
 
         // Collision with left wall
@@ -173,7 +220,7 @@ function updateBallPositions() {
           nextX - ball.radius < col * cellSize
         ) {
           nextX = col * cellSize + ball.radius;
-          ball.dx = ball.dx * dampingFactor;
+          ball.dx = ball.dx;
         }
 
         // Collision with right wall
@@ -183,7 +230,7 @@ function updateBallPositions() {
           nextX + ball.radius > (col + 1) * cellSize
         ) {
           nextX = (col + 1) * cellSize - ball.radius;
-          ball.dx = ball.dx * dampingFactor;
+          ball.dx = ball.dx;
         }
       }
     }
@@ -191,6 +238,9 @@ function updateBallPositions() {
     ball.x = nextX;
     ball.y = nextY;
   });
+
+  // Detect collisions between balls
+  detectBallCollisions();
 
   io.emit("plotPlayers", balls);
 }
@@ -216,6 +266,7 @@ io.on("connection", (socket) => {
     if (!tilts.some((tilt) => tilt.id === socket.id)) {
       tilts.push({ ...data, id: socket.id });
     }
+    updateBallPositions(); // Update positions on tilt change
   });
 
   socket.on("disconnect", () => {
@@ -223,6 +274,11 @@ io.on("connection", (socket) => {
     users = users.filter((user) => user.id !== socket.id);
     tilts = tilts.filter((tilt) => tilt.id !== socket.id);
     io.emit("plotPlayers", users);
+  });
+
+  socket.on("resetGame", () => {
+    resetGame();
+    io.emit("gameReset");
   });
 });
 
