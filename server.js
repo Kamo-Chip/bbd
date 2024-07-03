@@ -130,7 +130,7 @@ io.on("connection", (socket) => {
     users = users.map((user) => (user.id === data.id ? data : user));
 
     // Emit the updated user list to all clients
-    io.emit("plotPlayers", users);
+    socket.broadcast.emit("plotPlayers", users);
   });
 
   socket.on("disconnect", () => {
