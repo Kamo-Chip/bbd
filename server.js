@@ -263,7 +263,7 @@ io.on("connection", (socket) => {
       socket.emit("joinDenied");
       return;
     }
-    
+
     const availableBall = getAvailableBall();
     users.push({ ...availableBall, id: socket.id });
     socket.emit("assignColor", availableBall.color);
@@ -306,6 +306,7 @@ io.on("connection", (socket) => {
     console.log("Client disconnected:", socket.id);
     users = users.filter((user) => user.id !== socket.id);
     console.log("Users: ", users);
+
     socket.broadcast.emit("plotPlayers", users);
   });
 });
