@@ -226,20 +226,20 @@ const draw = () => {
   requestAnimationFrame(draw);
 };
 
+const maxSpeed = 6;
+
 const handleOrientation = (event) => {
-  const maxTilt = 45; // Maximum tilt angle to avoid too much speed
+  const maxTilt = 30; // Maximum tilt angle to avoid too much speed
 
-  const mazeTiltX = (event.gamma / maxTilt) * 5; // gamma is the left-to-right tilt
-  const mazeTiltY = (event.beta / maxTilt) * 5; // beta is the front-to-back tilt
+  const mazeTiltX = (event.gamma / maxTilt) * maxSpeed; // gamma is the left-to-right tilt
+  const mazeTiltY = (event.beta / maxTilt) * maxSpeed; // beta is the front-to-back tilt
 
-  balls.forEach((ball) => {
-    ball.dx = mazeTiltX;
-    ball.dy = mazeTiltY;
+  balls.forEach(ball => {
+    ball.dx = Math.max(-maxSpeed, Math.min(maxSpeed, mazeTiltX));
+    ball.dy = Math.max(-maxSpeed, Math.min(maxSpeed, mazeTiltY));
   });
 
-  canvas.style.transform = `rotateY(${
-    event.gamma
-  }deg) rotateX(${-event.beta}deg)`;
+  canvas.style.transform = `rotateY(${event.gamma}deg) rotateX(${-event.beta}deg)`;
 
   const alphaSpan = document.querySelector("#alpha");
   const betaSpan = document.querySelector("#beta");
@@ -249,6 +249,7 @@ const handleOrientation = (event) => {
   betaSpan.textContent = event.beta.toFixed(2);
   gammaSpan.textContent = event.gamma.toFixed(2);
 };
+
 
 const getDeviceOrientation = () => {
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
