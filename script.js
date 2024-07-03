@@ -101,7 +101,7 @@ const draw = () => {
   }, 1000 / fps);
 };
 
-const speedFactor = 5;
+const speedFactor = 3;
 const handleOrientation = (event) => {
   const maxTilt = 30; // Maximum tilt angle to avoid too much speed
   const mazeTiltX = (event.gamma / maxTilt) * speedFactor; // gamma is the left-to-right tilt
@@ -164,7 +164,9 @@ socket.on("joinDenied", () => {
 joinButton.addEventListener("click", () => {
   getDeviceOrientation();
   joinButton.style.display = "none";
-
+  if (!isHost) {
+    guideSpan.textContent = "Waiting for host to start game";
+  }
   socket.emit("join");
 });
 
@@ -173,7 +175,8 @@ socket.on("assignHost", (data) => {
   if (!isHost) {
     startButton.style.display = "none";
     genMazeButton.style.display = "none";
-    guideSpan.style.display = "none";
+    // guideSpan.style.display = "none";
+    guideSpan.textContent = "Join and wait for host to start game";
   }
 });
 
