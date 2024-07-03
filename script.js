@@ -11,6 +11,7 @@ const socket = io();
 let deviceId;
 let color;
 let isHost = false;
+let userName = localStorage.getItem("userName");
 
 // Define the balls with unique initial positions and colors
 let balls = [];
@@ -153,7 +154,8 @@ socket.on("assignColor", (data) => {
 });
 
 socket.on("announceWinner", (data) => {
-  alert(`${data.color} wins`);
+  alert(`${data.userName ?? data.color} wins (${data.color})`);
+  localStorage.clear();
   location.reload();
 });
 
@@ -167,7 +169,7 @@ joinButton.addEventListener("click", () => {
   if (!isHost) {
     guideSpan.textContent = "Waiting for host to start game";
   }
-  socket.emit("join");
+  socket.emit("join", userName);
 });
 
 socket.on("assignHost", (data) => {

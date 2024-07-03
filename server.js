@@ -1,7 +1,7 @@
 const express = require("express");
 const http = require("http");
 const socketIo = require("socket.io");
-
+const path = require("path");
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
@@ -11,7 +11,7 @@ let users = [];
 const balls = [
   { x: 10, y: 10, radius: 5, color: "blue", dx: 0, dy: 0 },
   { x: 290, y: 10, radius: 5, color: "red", dx: 0, dy: 0 },
-  { x: 10, y: 290, radius: 5, color: "yellow", dx: 0, dy: 0 },
+  { x: 10, y: 290, radius: 5, color: "purple", dx: 0, dy: 0 },
   { x: 150, y: 10, radius: 5, color: "green", dx: 0, dy: 0 },
 ];
 
@@ -25,6 +25,14 @@ const hole = {
 app.use(express.static(__dirname));
 
 const PORT = 3000;
+
+app.get("/", function (req, res) {
+  res.sendFile(path.join(__dirname, "login.html"));
+});
+
+app.get("/game", function (req, res) {
+  res.sendFile(path.join(__dirname, "game.html"));
+});
 
 const cellSize = 20;
 const cols = Math.floor(300 / cellSize); // Adjust based on canvas width
@@ -270,7 +278,7 @@ io.on("connection", (socket) => {
     io.emit("gameStarted");
   });
 
-  socket.on("join", () => {
+  socket.on("join", (data) => {
     if (users.length === 4) {
       socket.emit("joinDenied");
       return;
@@ -280,6 +288,7 @@ io.on("connection", (socket) => {
     users.push({
       ...availableBall,
       id: socket.id,
+      userName: data,
     });
 
     socket.emit("assignColor", availableBall.color);
