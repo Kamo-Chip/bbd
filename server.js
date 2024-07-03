@@ -6,8 +6,6 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-let hasGameStarted = false;
-let overallTitle = 0;
 let users = [];
 // Define the balls with unique initial positions and colors
 const balls = [
@@ -16,6 +14,14 @@ const balls = [
   { x: 10, y: 290, radius: 5, color: "yellow", dx: 0, dy: 0 },
   { x: 150, y: 10, radius: 5, color: "green", dx: 0, dy: 0 },
 ];
+
+const hole = {
+  x: 290,
+  y: 290,
+  radius: 7,
+  color: "black",
+};
+
 app.use(express.static(__dirname));
 
 const PORT = 3000;
@@ -24,6 +30,7 @@ const cellSize = 20;
 const cols = Math.floor(300 / cellSize); // Adjust based on canvas width
 const rows = Math.floor(300 / cellSize); // Adjust based on canvas height
 let cells = [];
+let isGameOver = false;
 
 class Cell {
   constructor(x, y) {
@@ -108,43 +115,7 @@ function genMaze(x, y) {
 // Initialize the maze
 setup();
 
-const detectBallCollisions = () => {
-  for (let i = 0; i < balls.length; i++) {
-    for (let j = i + 1; j < balls.length; j++) {
-      const ball1 = balls[i];
-      const ball2 = balls[j];
-      const dx = ball2.x - ball1.x;
-      const dy = ball2.y - ball1.y;
-      const distance = Math.sqrt(dx * dx + dy * dy);
-      const minDist = ball1.radius + ball2.radius;
-
-      if (distance < minDist) {
-        // Collision detected, adjust velocities
-        const angle = Math.atan2(dy, dx);
-        const sin = Math.sin(angle);
-        const cos = Math.cos(angle);
-
-        // Simple elastic collision response
-        const vx1 = ball1.dx;
-        const vy1 = ball1.dy;
-        const vx2 = ball2.dx;
-        const vy2 = ball2.dy;
-
-        ball1.dx = vx2;
-        ball1.dy = vy2;
-        ball2.dx = vx1;
-        ball2.dy = vy1;
-
-        // Adjust positions to prevent overlap
-        const overlap = 0.5 * (minDist - distance);
-        ball1.x -= overlap * cos;
-        ball1.y -= overlap * sin;
-        ball2.x += overlap * cos;
-        ball2.y += overlap * sin;
-      }
-    }
-  }
-};
+const dampingFactor = 0;
 
 const updateBallsPosition = (xTilt, yTilt) => {
   users.forEach((ball, idx) => {
@@ -206,40 +177,107 @@ const updateBallsPosition = (xTilt, yTilt) => {
         }
       }
     }
+
+    // Check for collision with other balls
+    for (let j = 0; j < users.length; j++) {
+      if (j !== idx) {
+        const otherBall = users[j];
+        const dx = otherBall.x - nextX;
+        const dy = otherBall.y - nextY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        // Collision detected
+        if (distance < ball.radius + otherBall.radius) {
+          // Resolve collision by adjusting positions
+          const angle = Math.atan2(dy, dx);
+          const sin = Math.sin(angle);
+          const cos = Math.cos(angle);
+
+          // Separate the balls to prevent overlap
+          const overlap = 0.5 * (ball.radius + otherBall.radius - distance);
+          nextX -= overlap * cos;
+          nextY -= overlap * sin;
+          otherBall.x += overlap * cos;
+          otherBall.y += overlap * sin;
+
+          // Simple elastic collision response (swap velocities)
+          [ball.dx, otherBall.dx] = [otherBall.dx, ball.dx];
+          [ball.dy, otherBall.dy] = [otherBall.dy, ball.dy];
+        }
+      }
+    }
     ball.x = nextX;
     ball.y = nextY;
     users[idx] = ball;
   });
 };
 
-const dampingFactor = 0;
-
 const isBallInHole = (ball) => {
   const dx = ball.x - hole.x;
   const dy = ball.y - hole.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
-
-  return distance < hole.radius - ball.radius;
+  isGameOver = true;
+  return distance < hole.radius + ball.radius - 5;
 };
+
+const checkWin = () => {
+  users.forEach((user) => {
+    if (isBallInHole(user)) {
+      io.emit("announceWinner", user);
+    }
+  });
+};
+
+const tiltValues = {};
 
 io.on("connection", (socket) => {
   console.log("User connected: ", socket.id);
 
+  socket.emit("assignID", socket.id);
+
+  socket.on("genMaze", () => {
+    setup();
+    io.emit("grid", cells);
+  });
+
   io.emit("grid", cells);
 
   socket.on("startGame", () => {
-    hasGameStarted = true;
     io.emit("gameStarted");
   });
 
   socket.on("join", () => {
     users.push({ ...balls[users.length], id: socket.id });
+    socket.emit("assignColor", balls[users.length - 1].color);
     io.emit("plotPlayers", users);
   });
 
   socket.on("tilt", (data) => {
-    console.log(data);
-    updateBallsPosition(data.xTilt, data.yTilt);
+    const { playerId, xTilt, yTilt, beta, gamma } = data;
+    tiltValues[playerId] = { xTilt, yTilt, beta, gamma };
+
+    let totalXTilt = 0;
+    let totalYTilt = 0;
+    let totalGamma = 0;
+    let totalBeta = 0;
+    let numPlayers = 0;
+
+    for (let id in tiltValues) {
+      totalXTilt += tiltValues[id].xTilt;
+      totalYTilt += tiltValues[id].yTilt;
+      totalGamma += tiltValues[id].gamma;
+      totalBeta += tiltValues[id].beta;
+      numPlayers++;
+    }
+
+    const avgXTilt = totalXTilt / numPlayers;
+    const avgYTilt = totalYTilt / numPlayers;
+    const avgGamma = totalGamma / numPlayers;
+    const avgBeta = totalBeta / numPlayers;
+
+    updateBallsPosition(avgXTilt, avgYTilt);
+    checkWin();
+    io.emit("tiltCanvas", { avgGamma, avgBeta });
     io.emit("plotPlayers", users);
   });
 

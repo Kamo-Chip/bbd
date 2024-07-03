@@ -2,15 +2,20 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const startButton = document.getElementById("startButton");
 const joinButton = document.getElementById("joinButton");
+const genMazeButton = document.getElementById("genMaze");
 
 const socket = io();
 
+let deviceId;
+let color;
+
 // Define the balls with unique initial positions and colors
 let balls = [];
+const currentPlayer = "";
 
 const hole = {
-  x: 300 - 10,
-  y: 300 - 10,
+  x: 290,
+  y: 290,
   radius: 7,
   color: "black",
 };
@@ -72,23 +77,6 @@ const drawHole = () => {
   ctx.closePath();
 };
 
-const resetGame = () => {
-  const initCoords = [
-    { x: 10, y: 10 },
-    { x: 290, y: 10 },
-    { x: 10, y: 290 },
-    { x: 150, y: 10 },
-  ];
-
-  balls.forEach((ball, idx) => {
-    ball.x = initCoords[idx].x;
-    ball.y = initCoords[idx].y;
-    ball.dx = 0;
-    ball.dy = 0;
-  });
-  setup();
-};
-
 const plotGrid = () => {
   for (let x = 0; x < cols; x++) {
     for (let y = 0; y < rows; y++) {
@@ -113,23 +101,16 @@ const draw = () => {
 const speedFactor = 2;
 const handleOrientation = (event) => {
   const maxTilt = 30; // Maximum tilt angle to avoid too much speed
-
   const mazeTiltX = (event.gamma / maxTilt) * speedFactor; // gamma is the left-to-right tilt
   const mazeTiltY = (event.beta / maxTilt) * speedFactor; // beta is the front-to-back tilt
 
-  socket.emit("tilt", { xTilt: mazeTiltX, yTilt: mazeTiltY });
-
-  canvas.style.transform = `rotateY(${
-    event.gamma
-  }deg) rotateX(${-event.beta}deg)`;
-
-  const alphaSpan = document.querySelector("#alpha");
-  const betaSpan = document.querySelector("#beta");
-  const gammaSpan = document.querySelector("#gamma");
-
-  alphaSpan.textContent = event.alpha.toFixed(2);
-  betaSpan.textContent = event.beta.toFixed(2);
-  gammaSpan.textContent = event.gamma.toFixed(2);
+  socket.emit("tilt", {
+    xTilt: mazeTiltX,
+    yTilt: mazeTiltY,
+    beta: event.beta,
+    gamma: event.gamma,
+    playerId: deviceId,
+  });
 };
 
 const getDeviceOrientation = () => {
@@ -154,9 +135,27 @@ startButton.addEventListener("click", () => {
   socket.emit("startGame");
 });
 
+genMazeButton.addEventListener("click", () => {
+  socket.emit("genMaze");
+});
+
+socket.on("assignID", (data) => {
+  deviceId = data;
+});
+
+socket.on("assignColor", (data) => {
+  color = data;
+  document.querySelector("#playerColor").textContent = data;
+});
+
+socket.on("announceWinner", (data) => {
+  alert(`Winner:  ${data.color}`);
+});
+
 joinButton.addEventListener("click", () => {
   getDeviceOrientation();
   joinButton.style.display = "none";
+
   socket.emit("join");
 });
 
@@ -167,6 +166,7 @@ socket.on("plotPlayers", (data) => {
 
 socket.on("gameStarted", () => {
   startButton.style.display = "none";
+  genMazeButton.style.display = "none";
 });
 
 socket.on("grid", (data) => {
@@ -176,6 +176,12 @@ socket.on("grid", (data) => {
     });
   });
 });
+
+socket.on("tiltCanvas", (data) => {
+  const { avgGamma, avgBeta } = data;
+  canvas.style.transform = `rotateY(${avgGamma}deg) rotateX(${-avgBeta}deg)`;
+});
+
 // Initial setup
 setup();
 draw();
