@@ -9,20 +9,22 @@ const io = socketIo(server);
 let hasGameStarted = false;
 
 let users = [];
-// Define the balls with unique initial positions and colors
 const balls = [
   { x: 10, y: 10, radius: 5, color: "blue", dx: 0, dy: 0 },
   { x: 290, y: 10, radius: 5, color: "red", dx: 0, dy: 0 },
   { x: 10, y: 290, radius: 5, color: "yellow", dx: 0, dy: 0 },
   { x: 150, y: 10, radius: 5, color: "green", dx: 0, dy: 0 },
 ];
+
+let tilts = []; // Store tilts from each client
+
 app.use(express.static(__dirname));
 
 const PORT = 3000;
 
 const cellSize = 20;
-const cols = Math.floor(300 / cellSize); // Adjust based on canvas width
-const rows = Math.floor(300 / cellSize); // Adjust based on canvas height
+const cols = Math.floor(300 / cellSize);
+const rows = Math.floor(300 / cellSize);
 let cells = [];
 
 class Cell {
@@ -108,6 +110,91 @@ function genMaze(x, y) {
 // Initialize the maze
 setup();
 
+function updateBallPositions() {
+  if (tilts.length === 0) return;
+
+  const totalTilt = tilts.reduce(
+    (acc, tilt) => {
+      acc.x += tilt.x;
+      acc.y += tilt.y;
+      return acc;
+    },
+    { x: 0, y: 0 }
+  );
+
+  const avgTilt = {
+    x: totalTilt.x / tilts.length,
+    y: totalTilt.y / tilts.length,
+  };
+
+  const dampingFactor = 0.1;
+  balls.forEach((ball) => {
+    let nextX = ball.x + avgTilt.x;
+    let nextY = ball.y + avgTilt.y;
+
+    // Prevent ball from moving out of canvas
+    if (nextX < ball.radius) nextX = ball.radius;
+    if (nextX > 300 - ball.radius) nextX = 300 - ball.radius;
+    if (nextY < ball.radius) nextY = ball.radius;
+    if (nextY > 300 - ball.radius) nextY = 300 - ball.radius;
+
+    // Check for collision with walls
+    const col = Math.floor(nextX / cellSize);
+    const row = Math.floor(nextY / cellSize);
+
+    if (col >= 0 && col < cols && row >= 0 && row < rows) {
+      const cell = cells[col][row];
+
+      if (cell) {
+        // Collision with top wall
+        if (
+          ball.dy < 0 &&
+          cell.walls.top &&
+          nextY - ball.radius < row * cellSize
+        ) {
+          nextY = row * cellSize + ball.radius;
+          ball.dy = -ball.dy * dampingFactor;
+        }
+
+        // Collision with bottom wall
+        if (
+          ball.dy > 0 &&
+          cell.walls.bottom &&
+          nextY + ball.radius > (row + 1) * cellSize
+        ) {
+          nextY = (row + 1) * cellSize - ball.radius;
+          ball.dy = -ball.dy * dampingFactor;
+        }
+
+        // Collision with left wall
+        if (
+          ball.dx < 0 &&
+          cell.walls.left &&
+          nextX - ball.radius < col * cellSize
+        ) {
+          nextX = col * cellSize + ball.radius;
+          ball.dx = ball.dx * dampingFactor;
+        }
+
+        // Collision with right wall
+        if (
+          ball.dx > 0 &&
+          cell.walls.right &&
+          nextX + ball.radius > (col + 1) * cellSize
+        ) {
+          nextX = (col + 1) * cellSize - ball.radius;
+          ball.dx = ball.dx * dampingFactor;
+        }
+      }
+    }
+
+    ball.x = nextX;
+    ball.y = nextY;
+  });
+
+  io.emit("plotPlayers", balls);
+}
+
 io.on("connection", (socket) => {
   console.log("User connected: ", socket.id);
 
@@ -124,22 +211,22 @@ io.on("connection", (socket) => {
     io.emit("plotPlayers", users);
   });
 
-  socket.on("ballMove", (data) => {
-    console.log(data);
-    // Update the user data for the moving ball
-    users = users.map((user) => (user.id === data.id ? data : user));
-
-    // Emit the updated user list to all clients
-    io.emit("plotPlayers", users);
+  socket.on("tilt", (data) => {
+    tilts = tilts.map((tilt) => (tilt.id === socket.id ? data : tilt));
+    if (!tilts.some((tilt) => tilt.id === socket.id)) {
+      tilts.push({ ...data, id: socket.id });
+    }
   });
 
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
-
     users = users.filter((user) => user.id !== socket.id);
-    socket.broadcast.emit("plotPlayers", users);
+    tilts = tilts.filter((tilt) => tilt.id !== socket.id);
+    io.emit("plotPlayers", users);
   });
 });
 
+// Update ball positions at 60 frames per second
+setInterval(updateBallPositions, 1000 / 60);
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
