@@ -246,7 +246,8 @@ io.on("connection", (socket) => {
   console.log("User connected: ", socket.id);
   socket.emit("assignID", socket.id);
 
-  socket.emit("assignHost", !users.length ? true : false);
+  console.log();
+  socket.emit("assignHost", io.engine.clientsCount === 1 ? true : false);
 
   socket.on("genMaze", () => {
     setup();

@@ -3,6 +3,8 @@ const ctx = canvas.getContext("2d");
 const startButton = document.getElementById("startButton");
 const joinButton = document.getElementById("joinButton");
 const genMazeButton = document.getElementById("genMaze");
+const guideSpan = document.getElementById("guide");
+const playerColor = document.getElementById("playerColor");
 
 const socket = io();
 
@@ -99,7 +101,7 @@ const draw = () => {
   }, 1000 / fps);
 };
 
-const speedFactor = 2;
+const speedFactor = 5;
 const handleOrientation = (event) => {
   const maxTilt = 30; // Maximum tilt angle to avoid too much speed
   const mazeTiltX = (event.gamma / maxTilt) * speedFactor; // gamma is the left-to-right tilt
@@ -146,7 +148,8 @@ socket.on("assignID", (data) => {
 
 socket.on("assignColor", (data) => {
   color = data;
-  document.querySelector("#playerColor").textContent = `You are ` + data;
+  playerColor.textContent = `You are ` + data;
+  playerColor.style.display = "flex";
 });
 
 socket.on("announceWinner", (data) => {
@@ -166,7 +169,12 @@ joinButton.addEventListener("click", () => {
 });
 
 socket.on("assignHost", (data) => {
-  console.log(data);
+  isHost = data;
+  if (!isHost) {
+    startButton.style.display = "none";
+    genMazeButton.style.display = "none";
+    guideSpan.style.display = "none";
+  }
 });
 
 socket.on("plotPlayers", (data) => {
@@ -178,6 +186,8 @@ socket.on("gameStarted", () => {
   startButton.style.display = "none";
   genMazeButton.style.display = "none";
   joinButton.style.display = "none";
+  guideSpan.style.display = "none";
+  playerColor.style.display = "flex";
 });
 
 socket.on("grid", (data) => {
