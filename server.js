@@ -7,7 +7,7 @@ const server = http.createServer(app);
 const io = socketIo(server);
 
 let hasGameStarted = false;
-
+let overallTitle = 0;
 let users = [];
 // Define the balls with unique initial positions and colors
 const balls = [
@@ -108,6 +108,120 @@ function genMaze(x, y) {
 // Initialize the maze
 setup();
 
+const detectBallCollisions = () => {
+  for (let i = 0; i < balls.length; i++) {
+    for (let j = i + 1; j < balls.length; j++) {
+      const ball1 = balls[i];
+      const ball2 = balls[j];
+      const dx = ball2.x - ball1.x;
+      const dy = ball2.y - ball1.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const minDist = ball1.radius + ball2.radius;
+
+      if (distance < minDist) {
+        // Collision detected, adjust velocities
+        const angle = Math.atan2(dy, dx);
+        const sin = Math.sin(angle);
+        const cos = Math.cos(angle);
+
+        // Simple elastic collision response
+        const vx1 = ball1.dx;
+        const vy1 = ball1.dy;
+        const vx2 = ball2.dx;
+        const vy2 = ball2.dy;
+
+        ball1.dx = vx2;
+        ball1.dy = vy2;
+        ball2.dx = vx1;
+        ball2.dy = vy1;
+
+        // Adjust positions to prevent overlap
+        const overlap = 0.5 * (minDist - distance);
+        ball1.x -= overlap * cos;
+        ball1.y -= overlap * sin;
+        ball2.x += overlap * cos;
+        ball2.y += overlap * sin;
+      }
+    }
+  }
+};
+
+const updateBallsPosition = (xTilt, yTilt) => {
+  users.forEach((ball, idx) => {
+    let nextX = ball.x + xTilt;
+    let nextY = ball.y + yTilt;
+
+    // Prevent ball from moving out of canvas
+    if (nextX < ball.radius) nextX = ball.radius;
+    if (nextX > 300 - ball.radius) nextX = 300 - ball.radius;
+    if (nextY < ball.radius) nextY = ball.radius;
+    if (nextY > 300 - ball.radius) nextY = 300 - ball.radius;
+
+    // Check for collision with walls
+    const col = Math.floor(nextX / cellSize);
+    const row = Math.floor(nextY / cellSize);
+
+    if (col >= 0 && col < cols && row >= 0 && row < rows) {
+      const cell = cells[col][row];
+
+      if (cell) {
+        // Collision with top wall
+        if (
+          yTilt < 0 &&
+          cell.walls.top &&
+          nextY - ball.radius < row * cellSize
+        ) {
+          nextY = row * cellSize + ball.radius;
+          ball.dy = -yTilt * dampingFactor;
+        }
+
+        // Collision with bottom wall
+        if (
+          yTilt > 0 &&
+          cell.walls.bottom &&
+          nextY + ball.radius > (row + 1) * cellSize
+        ) {
+          nextY = (row + 1) * cellSize - ball.radius;
+          ball.dy = -yTilt * dampingFactor;
+        }
+
+        // Collision with left wall
+        if (
+          xTilt < 0 &&
+          cell.walls.left &&
+          nextX - ball.radius < col * cellSize
+        ) {
+          nextX = col * cellSize + ball.radius;
+          ball.dx = xTilt * dampingFactor;
+        }
+
+        // Collision with right wall
+        if (
+          xTilt > 0 &&
+          cell.walls.right &&
+          nextX + ball.radius > (col + 1) * cellSize
+        ) {
+          nextX = (col + 1) * cellSize - ball.radius;
+          ball.dx = xTilt * dampingFactor;
+        }
+      }
+    }
+    ball.x = nextX;
+    ball.y = nextY;
+    users[idx] = ball;
+  });
+};
+
+const dampingFactor = 0;
+
+const isBallInHole = (ball) => {
+  const dx = ball.x - hole.x;
+  const dy = ball.y - hole.y;
+  const distance = Math.sqrt(dx * dx + dy * dy);
+
+  return distance < hole.radius - ball.radius;
+};
+
 io.on("connection", (socket) => {
   console.log("User connected: ", socket.id);
 
@@ -123,12 +237,17 @@ io.on("connection", (socket) => {
     io.emit("plotPlayers", users);
   });
 
-  socket.on("ballMove", (data) => {
+  // socket.on("ballMove", (data) => {
+  //   console.log(data);
+  //   // Update the user data for the moving ball
+  //   users = users.map((user) => (user.id === data.id ? data : user));
+  //   // Emit the updated user list to all clients
+  //   io.emit("plotPlayers", users);
+  // });
+
+  socket.on("tilt", (data) => {
     console.log(data);
-    // Update the user data for the moving ball
-    users = users.map((user) => (user.id === data.id ? data : user));
-    console.log(users);
-    // Emit the updated user list to all clients
+    updateBallsPosition(data.xTilt, data.yTilt);
     io.emit("plotPlayers", users);
   });
 
@@ -139,6 +258,5 @@ io.on("connection", (socket) => {
     socket.broadcast.emit("plotPlayers", users);
   });
 });
-
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
