@@ -108,6 +108,61 @@ function genMaze(x, y) {
 // Initialize the maze
 setup();
 
+// Add this function to handle ball movement and collision
+const updateBallPosition = (ball) => {
+  let nextX = ball.x + ball.dx;
+  let nextY = ball.y + ball.dy;
+
+  // Prevent ball from moving out of bounds
+  nextX = Math.max(ball.radius, Math.min(nextX, 300 - ball.radius));
+  nextY = Math.max(ball.radius, Math.min(nextY, 300 - ball.radius));
+
+  // Check for collision with walls
+  const col = Math.floor(nextX / cellSize);
+  const row = Math.floor(nextY / cellSize);
+
+  if (col >= 0 && col < cols && row >= 0 && row < rows) {
+    const cell = cells[col][row];
+
+    if (cell) {
+      // Collision with top wall
+      if (ball.dy < 0 && cell.walls.top && nextY - ball.radius < row * cellSize) {
+        nextY = row * cellSize + ball.radius;
+        ball.dy = 0;
+      }
+
+      // Collision with bottom wall
+      if (ball.dy > 0 && cell.walls.bottom && nextY + ball.radius > (row + 1) * cellSize) {
+        nextY = (row + 1) * cellSize - ball.radius;
+        ball.dy = 0;
+      }
+
+      // Collision with left wall
+      if (ball.dx < 0 && cell.walls.left && nextX - ball.radius < col * cellSize) {
+        nextX = col * cellSize + ball.radius;
+        ball.dx = 0;
+      }
+
+      // Collision with right wall
+      if (ball.dx > 0 && cell.walls.right && nextX + ball.radius > (col + 1) * cellSize) {
+        nextX = (col + 1) * cellSize - ball.radius;
+        ball.dx = 0;
+      }
+    }
+  }
+
+  ball.x = nextX;
+  ball.y = nextY;
+
+  // Check if ball is in the hole
+  if (isBallInHole(ball)) {
+    io.emit(`${ball.color} wins!`);
+    // Optionally reset the game or handle win condition
+  }
+};
+
+
+
 io.on("connection", (socket) => {
   console.log("User connected: ", socket.id);
 
@@ -125,20 +180,14 @@ io.on("connection", (socket) => {
   });
 
   socket.on("ballMove", (data) => {
-    console.log(data);
-
-    let updatedUsers = [];
-    users.forEach((user) => {
-      if (user.id === data.id) {
-        updatedUsers.push(data);
-      } else {
-        updatedUsers.push(user);
-      }
-    });
-
-    users = updatedUsers;
-
-    io.emit("plotPlayers", users);
+    let updatedBall = users.find(user => user.id === data.id);
+    if (updatedBall) {
+      // Update ball position on server
+      updateBallPosition(Object.assign(updatedBall, data));
+      
+      // Emit updated ball state to all clients
+      io.emit("plotPlayers", users);
+    }
   });
 
   socket.on("disconnect", () => {
