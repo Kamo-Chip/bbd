@@ -6,9 +6,10 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
+const PORT = 3000;
 let hasGameStarted = false;
-
 let users = [];
+
 // Define the balls with unique initial positions and colors
 const balls = [
   { x: 10, y: 10, radius: 5, color: "blue", dx: 0, dy: 0 },
@@ -16,13 +17,10 @@ const balls = [
   { x: 10, y: 290, radius: 5, color: "yellow", dx: 0, dy: 0 },
   { x: 150, y: 10, radius: 5, color: "green", dx: 0, dy: 0 },
 ];
-app.use(express.static(__dirname));
-
-const PORT = 3000;
 
 const cellSize = 20;
-const cols = Math.floor(300 / cellSize); // Adjust based on canvas width
-const rows = Math.floor(300 / cellSize); // Adjust based on canvas height
+const cols = Math.floor(300 / cellSize);
+const rows = Math.floor(300 / cellSize);
 let cells = [];
 
 class Cell {
@@ -49,25 +47,16 @@ function genMaze(x, y) {
   const directions = ["top", "right", "bottom", "left"];
   const getNewCoords = (x, y, dir) => {
     switch (dir) {
-      case "top":
-        return [x, y - 1];
-      case "right":
-        return [x + 1, y];
-      case "bottom":
-        return [x, y + 1];
-      case "left":
-        return [x - 1, y];
+      case "top": return [x, y - 1];
+      case "right": return [x + 1, y];
+      case "bottom": return [x, y + 1];
+      case "left": return [x - 1, y];
     }
   };
 
   const removeWalls = (current, next, dir) => {
     current.walls[dir] = false;
-    const opposite = {
-      top: "bottom",
-      right: "left",
-      bottom: "top",
-      left: "right",
-    };
+    const opposite = { top: "bottom", right: "left", bottom: "top", left: "right" };
     next.walls[opposite[dir]] = false;
   };
 
@@ -78,24 +67,15 @@ function genMaze(x, y) {
   while (stack.length) {
     const current = stack[stack.length - 1];
     const [cx, cy] = [current.x, current.y];
-    const unvisitedNeighbors = directions
-      .map((dir) => {
-        const [nx, ny] = getNewCoords(cx, cy, dir);
-        return nx >= 0 &&
-          ny >= 0 &&
-          nx < cols &&
-          ny < rows &&
-          !cells[nx][ny].visited
-          ? { dir, cell: cells[nx][ny] }
-          : null;
-      })
-      .filter(Boolean);
+    const unvisitedNeighbors = directions.map((dir) => {
+      const [nx, ny] = getNewCoords(cx, cy, dir);
+      return nx >= 0 && ny >= 0 && nx < cols && ny < rows && !cells[nx][ny].visited
+        ? { dir, cell: cells[nx][ny] }
+        : null;
+    }).filter(Boolean);
 
     if (unvisitedNeighbors.length) {
-      const { dir, cell } =
-        unvisitedNeighbors[
-          Math.floor(Math.random() * unvisitedNeighbors.length)
-        ];
+      const { dir, cell } = unvisitedNeighbors[Math.floor(Math.random() * unvisitedNeighbors.length)];
       removeWalls(current, cell, dir);
       cell.visited = true;
       stack.push(cell);
@@ -105,13 +85,13 @@ function genMaze(x, y) {
   }
 }
 
-// Initialize the maze
 setup();
+
+app.use(express.static(__dirname));
 
 io.on("connection", (socket) => {
   console.log("User connected: ", socket.id);
-
-  io.emit("grid", cells);
+  socket.emit("grid", cells); // Send maze data to the client
 
   socket.on("startGame", () => {
     hasGameStarted = true;
@@ -119,30 +99,27 @@ io.on("connection", (socket) => {
   });
 
   socket.on("join", () => {
-    users.push({ ...balls[users.length], id: users.length });
-
+    if (hasGameStarted) {
+      socket.emit("joinDenied");
+      return;
+    }
+    users.push({ ...balls[users.length], id: socket.id });
     io.emit("plotPlayers", users);
   });
 
   socket.on("ballMove", (data) => {
-    console.log(data);
-
-    let updatedUsers = [];
-    users.forEach((user) => {
-      if (user.id === data.id) {
-        updatedUsers.push(data);
-      } else {
-        updatedUsers.push(user);
-      }
-    });
-
-    users = updatedUsers;
-
+    users = users.map(user => (user.id === data.id ? data : user));
     io.emit("plotPlayers", users);
+  });
+
+  socket.on("win", (data) => {
+    io.emit("message", `${data.color} wins!`);
   });
 
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
+    users = users.filter(user => user.id !== socket.id);
+    io.emit("plotPlayers", users);
   });
 });
 
