@@ -6,13 +6,16 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-const users = [];
-const initCoords = {
-  blue: { x: 10, y: 10 },
-  red: { x: 290, y: 10 },
-  purple: { x: 10, y: 290 },
-  green: { x: 150, y: 10 },
-};
+let hasGameStarted = false;
+
+let users = [];
+// Define the balls with unique initial positions and colors
+const balls = [
+  { x: 10, y: 10, radius: 5, color: "blue", dx: 0, dy: 0 },
+  { x: 290, y: 10, radius: 5, color: "red", dx: 0, dy: 0 },
+  { x: 10, y: 290, radius: 5, color: "yellow", dx: 0, dy: 0 },
+  { x: 150, y: 10, radius: 5, color: "green", dx: 0, dy: 0 },
+];
 app.use(express.static(__dirname));
 
 const PORT = 3000;
@@ -100,7 +103,6 @@ function genMaze(x, y) {
       stack.pop();
     }
   }
-  hasGameStarted = true;
 }
 
 // Initialize the maze
@@ -111,18 +113,32 @@ io.on("connection", (socket) => {
 
   io.emit("grid", cells);
 
-  socket.on("join", (data) => {
-    const { color } = data;
+  socket.on("startGame", () => {
+    hasGameStarted = true;
+    io.emit("gameStarted");
+  });
 
-    const coords = initCoords[color];
-
-    users.push({ x: coords.x, y: coords.y, color, id: socket.id });
+  socket.on("join", () => {
+    users.push({ ...balls[users.length], id: users.length });
 
     io.emit("plotPlayers", users);
   });
 
   socket.on("ballMove", (data) => {
     console.log(data);
+
+    let updatedUsers = [];
+    users.forEach((user) => {
+      if (user.id === data.id) {
+        updatedUsers.push(data);
+      } else {
+        updatedUsers.push(user);
+      }
+    });
+
+    users = updatedUsers;
+
+    io.emit("plotPlayers", users);
   });
 
   socket.on("disconnect", () => {

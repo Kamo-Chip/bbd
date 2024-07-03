@@ -5,14 +5,8 @@ const joinButton = document.getElementById("joinButton");
 
 const socket = io();
 
-const ball = {
-  x: 20,
-  y: 20,
-  radius: 5,
-  color: "blue",
-  dx: 0,
-  dy: 0,
-};
+// Define the balls with unique initial positions and colors
+let balls = [];
 
 const hole = {
   x: 300 - 10,
@@ -20,11 +14,6 @@ const hole = {
   radius: 7,
   color: "black",
 };
-
-const xCoord = 10;
-const yCoord = 290;
-let colors = ["red", "blue", "green", "purple"];
-let colorIndex = Math.floor(Math.random() * 4);
 
 const cellSize = 20;
 const cols = Math.floor(300 / cellSize);
@@ -59,7 +48,6 @@ class Cell {
 }
 
 function setup() {
-  initBoard();
   for (let x = 0; x < cols; x++) {
     cells[x] = [];
     for (let y = 0; y < rows; y++) {
@@ -68,18 +56,10 @@ function setup() {
   }
 }
 
-const drawBall = () => {
+const drawBall = (ball) => {
   ctx.beginPath();
   ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
-  ctx.fillStyle = colors[colorIndex];
-  ctx.fill();
-  ctx.closePath();
-};
-
-const drawBallSpecific = (x, y, color) => {
-  ctx.beginPath();
-  ctx.arc(x, y, ball.radius, 0, Math.PI * 2);
-  ctx.fillStyle = color;
+  ctx.fillStyle = ball.color;
   ctx.fill();
   ctx.closePath();
 };
@@ -92,15 +72,15 @@ const drawHole = () => {
   ctx.closePath();
 };
 
-const updateBallPosition = () => {
+const updateBallPosition = (ball) => {
   let nextX = ball.x + ball.dx;
   let nextY = ball.y + ball.dy;
 
   // Prevent ball from moving out of canvas
   if (nextX < ball.radius) nextX = ball.radius;
-  if (nextX > canvas.width - ball.radius) nextX = canvas.width - ball.radius;
+  if (nextX > 300 - ball.radius) nextX = 300 - ball.radius;
   if (nextY < ball.radius) nextY = ball.radius;
-  if (nextY > canvas.height - ball.radius) nextY = canvas.height - ball.radius;
+  if (nextY > 300 - ball.radius) nextY = 300 - ball.radius;
 
   // Check for collision with walls
   const col = Math.floor(nextX / cellSize);
@@ -156,16 +136,16 @@ const updateBallPosition = () => {
   ball.y = nextY;
 
   // Check if ball is in the hole
-  if (isBallInHole()) {
-    alert("You win!");
-    resetGame();
+  if (isBallInHole(ball)) {
+    socket.emit(`${ball.color} wins!`);
+    // alert("You win!");
+    //resetGame();
   }
 
-  // // Emit ball position to the server
-  socket.emit("ballMove", { x: ball.x, y: ball.y });
+  socket.emit("ballMove", ball);
 };
 
-const isBallInHole = () => {
+const isBallInHole = (ball) => {
   const dx = ball.x - hole.x;
   const dy = ball.y - hole.y;
   const distance = Math.sqrt(dx * dx + dy * dy);
@@ -174,15 +154,20 @@ const isBallInHole = () => {
 };
 
 const resetGame = () => {
-  ball.x = 20;
-  ball.y = 20;
-  ball.dx = 0;
-  ball.dy = 0;
-  setup();
-};
+  const initCoords = [
+    { x: 10, y: 10 },
+    { x: 290, y: 10 },
+    { x: 10, y: 290 },
+    { x: 150, y: 10 },
+  ];
 
-const initBoard = () => {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  balls.forEach((ball, idx) => {
+    ball.x = initCoords[idx].x;
+    ball.y = initCoords[idx].y;
+    ball.dx = 0;
+    ball.dy = 0;
+  });
+  setup();
 };
 
 const plotGrid = () => {
@@ -191,18 +176,70 @@ const plotGrid = () => {
       cells[x][y].show();
     }
   }
-  drawHole();
+};
+
+const detectBallCollisions = () => {
+  for (let i = 0; i < balls.length; i++) {
+    for (let j = i + 1; j < balls.length; j++) {
+      const ball1 = balls[i];
+      const ball2 = balls[j];
+      const dx = ball2.x - ball1.x;
+      const dy = ball2.y - ball1.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+      const minDist = ball1.radius + ball2.radius;
+
+      if (distance < minDist) {
+        // Collision detected, adjust velocities
+        const angle = Math.atan2(dy, dx);
+        const sin = Math.sin(angle);
+        const cos = Math.cos(angle);
+
+        // Simple elastic collision response
+        const vx1 = ball1.dx;
+        const vy1 = ball1.dy;
+        const vx2 = ball2.dx;
+        const vy2 = ball2.dy;
+
+        ball1.dx = vx2;
+        ball1.dy = vy2;
+        ball2.dx = vx1;
+        ball2.dy = vy1;
+
+        // Adjust positions to prevent overlap
+        const overlap = 0.5 * (minDist - distance);
+        ball1.x -= overlap * cos;
+        ball1.y -= overlap * sin;
+        ball2.x += overlap * cos;
+        ball2.y += overlap * sin;
+      }
+    }
+  }
 };
 
 const draw = () => {
-  updateBallPosition();
+  ctx.clearRect(0, 0, 300, 300);
+  plotGrid();
+  drawHole();
+  balls.forEach((ball) => drawBall(ball));
+  balls.forEach((ball) => updateBallPosition(ball));
+  detectBallCollisions();
   requestAnimationFrame(draw);
 };
 
 const handleOrientation = (event) => {
   const maxTilt = 45; // Maximum tilt angle to avoid too much speed
-  ball.dx = (event.gamma / maxTilt) * 5; // gamma is the left-to-right tilt
-  ball.dy = (event.beta / maxTilt) * 5; // beta is the front-to-back tilt
+
+  const mazeTiltX = (event.gamma / maxTilt) * 5; // gamma is the left-to-right tilt
+  const mazeTiltY = (event.beta / maxTilt) * 5; // beta is the front-to-back tilt
+
+  balls.forEach((ball) => {
+    ball.dx = mazeTiltX;
+    ball.dy = mazeTiltY;
+  });
+
+  canvas.style.transform = `rotateY(${
+    event.gamma
+  }deg) rotateX(${-event.beta}deg)`;
 
   const alphaSpan = document.querySelector("#alpha");
   const betaSpan = document.querySelector("#beta");
@@ -211,10 +248,6 @@ const handleOrientation = (event) => {
   alphaSpan.textContent = event.alpha.toFixed(2);
   betaSpan.textContent = event.beta.toFixed(2);
   gammaSpan.textContent = event.gamma.toFixed(2);
-
-  canvas.style.transform = `
-  rotateY(${event.gamma / 2}deg) rotateX(${-event.beta / 2}deg)
-`;
 };
 
 const getDeviceOrientation = () => {
@@ -236,47 +269,37 @@ const getDeviceOrientation = () => {
 };
 
 startButton.addEventListener("click", () => {
-  getDeviceOrientation();
-  plotGrid();
   socket.emit("startGame");
 });
 
 joinButton.addEventListener("click", () => {
   getDeviceOrientation();
-  draw();
-  socket.emit("join", {
-    id: "",
-    color: colors[colorIndex],
-  });
+  socket.emit("join");
 });
 
 socket.on("plotPlayers", (data) => {
   console.log(data);
-  data.map((b) => {
-    ball.x = b.x;
-    ball.y = b.y;
-    ball.color = b.color;
-    drawBallSpecific(b.x, b.y, b.color);
+  balls = data;
+  balls.forEach((ball) => {
+    drawBall(ball);
   });
+});
+
+socket.on("gameStarted", () => {
+  startButton.style.display = "none";
+});
+
+socket.on("joinDenied", () => {
+  console.log("Game has already started");
 });
 
 socket.on("grid", (data) => {
-  // console.log(data);
   data.forEach((cell, colNum) => {
-    console.log(`\n\nColumn: ${colNum}`, cell);
     cell.map((entry, rowNum) => {
-      console.log(`Entry: ${rowNum}`, entry);
       cells[rowNum][colNum] = new Cell(entry.x, entry.y, entry.walls);
     });
   });
-
-  console.log(cells);
-  // cells = data.map((col) =>
-  //   col.map((cell) => new Cell(cell.x, cell.y, cell.walls))
-  // );
-  // console.log(cells);
-  // resetGame();
 });
 // Initial setup
 setup();
-requestAnimationFrame(draw);
+draw();
