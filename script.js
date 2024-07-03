@@ -149,8 +149,12 @@ socket.on("assignColor", (data) => {
 });
 
 socket.on("announceWinner", (data) => {
-  alert(`Winner:  ${data.color}`);
+  alert(`${data.color} wins`);
   location.reload();
+});
+
+socket.on("joinDenied", () => {
+  alert("Game is full");
 });
 
 joinButton.addEventListener("click", () => {

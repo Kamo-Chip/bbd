@@ -221,6 +221,16 @@ const isBallInHole = (ball) => {
   return distance < hole.radius + ball.radius - 5;
 };
 
+const getAvailableBall = () => {
+  const availableBalls = [];
+  balls.forEach((ball, idx) => {
+    if (!users.find((user) => user.color === ball.color)) {
+      availableBalls.push(ball);
+    }
+  });
+  return availableBalls[0];
+};
+
 const checkWin = () => {
   users.forEach((user) => {
     if (isBallInHole(user)) {
@@ -249,8 +259,14 @@ io.on("connection", (socket) => {
   });
 
   socket.on("join", () => {
-    users.push({ ...balls[users.length], id: socket.id });
-    socket.emit("assignColor", balls[users.length - 1].color);
+    if (users.length === 4) {
+      socket.emit("joinDenied");
+      return;
+    }
+    
+    const availableBall = getAvailableBall();
+    users.push({ ...availableBall, id: socket.id });
+    socket.emit("assignColor", availableBall.color);
     console.log("Users: ", users);
     io.emit("plotPlayers", users);
   });
@@ -288,8 +304,8 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
-    console.log("Users: ", users);
     users = users.filter((user) => user.id !== socket.id);
+    console.log("Users: ", users);
     socket.broadcast.emit("plotPlayers", users);
   });
 });
