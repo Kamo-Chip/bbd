@@ -116,62 +116,127 @@ const drawHole = () => {
   ctx.closePath();
 };
 
+// const updateBallPosition = (ball) => {
+//   let nextX = ball.x + ball.dx;
+//   let nextY = ball.y + ball.dy;
+
+//   // Prevent ball from moving out of canvas
+//   if (nextX < ball.radius) nextX = ball.radius;
+//   if (nextX > canvas.width - ball.radius) nextX = canvas.width - ball.radius;
+//   if (nextY < ball.radius) nextY = ball.radius;
+//   if (nextY > canvas.height - ball.radius) nextY = canvas.height - ball.radius;
+
+//   // Check for collision with walls
+//   const col = Math.floor(nextX / cellSize);
+//   const row = Math.floor(nextY / cellSize);
+
+//   if (col >= 0 && col < cols && row >= 0 && row < rows) {
+//     const cell = cells[col][row];
+
+//     if (cell) {
+//       // Collision with top wall
+//       if (ball.dy < 0 && cell.walls.top && nextY - ball.radius < row * cellSize) {
+//         nextY = row * cellSize + ball.radius;
+//         ball.dy = 0;
+//       }
+
+//       // Collision with bottom wall
+//       if (ball.dy > 0 && cell.walls.bottom && nextY + ball.radius > (row + 1) * cellSize) {
+//         nextY = (row + 1) * cellSize - ball.radius;
+//         ball.dy = 0;
+//       }
+
+//       // Collision with left wall
+//       if (ball.dx < 0 && cell.walls.left && nextX - ball.radius < col * cellSize) {
+//         nextX = col * cellSize + ball.radius;
+//         ball.dx = 0;
+//       }
+
+//       // Collision with right wall
+//       if (ball.dx > 0 && cell.walls.right && nextX + ball.radius > (col + 1) * cellSize) {
+//         nextX = (col + 1) * cellSize - ball.radius;
+//         ball.dx = 0;
+//       }
+//     }
+//   }
+
+//   ball.x = nextX;
+//   ball.y = nextY;
+
+//   // Check if ball is in the hole
+//   if (isBallInHole(ball)) {
+//     if (!ball.isWinner) {
+//       ball.isWinner = true;
+//       alert(`${ball.color} wins!`);
+//       resetGame();
+//     }
+//   }
+// };
+
 const updateBallPosition = (ball) => {
-  let nextX = ball.x + ball.dx;
-  let nextY = ball.y + ball.dy;
+  const steps = 10; // Increase steps to improve collision detection
+  const stepX = ball.dx / steps;
+  const stepY = ball.dy / steps;
 
-  // Prevent ball from moving out of canvas
-  if (nextX < ball.radius) nextX = ball.radius;
-  if (nextX > canvas.width - ball.radius) nextX = canvas.width - ball.radius;
-  if (nextY < ball.radius) nextY = ball.radius;
-  if (nextY > canvas.height - ball.radius) nextY = canvas.height - ball.radius;
+  for (let step = 0; step < steps; step++) {
+    let nextX = ball.x + stepX;
+    let nextY = ball.y + stepY;
 
-  // Check for collision with walls
-  const col = Math.floor(nextX / cellSize);
-  const row = Math.floor(nextY / cellSize);
+    // Prevent ball from moving out of canvas
+    if (nextX < ball.radius) nextX = ball.radius;
+    if (nextX > canvas.width - ball.radius) nextX = canvas.width - ball.radius;
+    if (nextY < ball.radius) nextY = ball.radius;
+    if (nextY > canvas.height - ball.radius) nextY = canvas.height - ball.radius;
 
-  if (col >= 0 && col < cols && row >= 0 && row < rows) {
-    const cell = cells[col][row];
+    // Check for collision with walls
+    const col = Math.floor(nextX / cellSize);
+    const row = Math.floor(nextY / cellSize);
 
-    if (cell) {
-      // Collision with top wall
-      if (ball.dy < 0 && cell.walls.top && nextY - ball.radius < row * cellSize) {
-        nextY = row * cellSize + ball.radius;
-        ball.dy = 0;
-      }
+    if (col >= 0 && col < cols && row >= 0 && row < rows) {
+      const cell = cells[col][row];
 
-      // Collision with bottom wall
-      if (ball.dy > 0 && cell.walls.bottom && nextY + ball.radius > (row + 1) * cellSize) {
-        nextY = (row + 1) * cellSize - ball.radius;
-        ball.dy = 0;
-      }
+      if (cell) {
+        // Collision with top wall
+        if (ball.dy < 0 && cell.walls.top && nextY - ball.radius < row * cellSize) {
+          nextY = row * cellSize + ball.radius;
+          ball.dy = 0;
+        }
 
-      // Collision with left wall
-      if (ball.dx < 0 && cell.walls.left && nextX - ball.radius < col * cellSize) {
-        nextX = col * cellSize + ball.radius;
-        ball.dx = 0;
-      }
+        // Collision with bottom wall
+        if (ball.dy > 0 && cell.walls.bottom && nextY + ball.radius > (row + 1) * cellSize) {
+          nextY = (row + 1) * cellSize - ball.radius;
+          ball.dy = 0;
+        }
 
-      // Collision with right wall
-      if (ball.dx > 0 && cell.walls.right && nextX + ball.radius > (col + 1) * cellSize) {
-        nextX = (col + 1) * cellSize - ball.radius;
-        ball.dx = 0;
+        // Collision with left wall
+        if (ball.dx < 0 && cell.walls.left && nextX - ball.radius < col * cellSize) {
+          nextX = col * cellSize + ball.radius;
+          ball.dx = 0;
+        }
+
+        // Collision with right wall
+        if (ball.dx > 0 && cell.walls.right && nextX + ball.radius > (col + 1) * cellSize) {
+          nextX = (col + 1) * cellSize - ball.radius;
+          ball.dx = 0;
+        }
       }
     }
-  }
 
-  ball.x = nextX;
-  ball.y = nextY;
+    ball.x = nextX;
+    ball.y = nextY;
 
-  // Check if ball is in the hole
-  if (isBallInHole(ball)) {
-    if (!ball.isWinner) {
-      ball.isWinner = true;
-      alert(`${ball.color} wins!`);
-      resetGame();
+    // Check if ball is in the hole
+    if (isBallInHole(ball)) {
+      if (!ball.isWinner) {
+        ball.isWinner = true;
+        alert(`${ball.color} wins!`);
+        resetGame();
+        return; // Exit early to prevent multiple alerts
+      }
     }
   }
 };
+
 
 const isBallInHole = (ball) => {
   const dx = ball.x - hole.x;
@@ -241,6 +306,7 @@ const detectBallCollisions = () => {
   }
 };
 
+
 const draw = () => {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   for (let x = 0; x < cols; x++) {
@@ -255,15 +321,39 @@ const draw = () => {
   requestAnimationFrame(draw);
 };
 
-const handleOrientation = (event) => {
-  const maxTilt = 45; // Maximum tilt angle to avoid too much speed
+// const handleOrientation = (event) => {
+//   const maxTilt = 30; // Maximum tilt angle to avoid too much speed
   
-  const mazeTiltX = (event.gamma / maxTilt) * 5; // gamma is the left-to-right tilt
-  const mazeTiltY = (event.beta / maxTilt) * 5; // beta is the front-to-back tilt
+//   const mazeTiltX = (event.gamma / maxTilt) * 5; // gamma is the left-to-right tilt
+//   const mazeTiltY = (event.beta / maxTilt) * 5; // beta is the front-to-back tilt
+
+//   balls.forEach(ball => {
+//     ball.dx = mazeTiltX;
+//     ball.dy = mazeTiltY;
+//   });
+
+//   canvas.style.transform = `rotateY(${event.gamma}deg) rotateX(${-event.beta}deg)`;
+
+//   const alphaSpan = document.querySelector("#alpha");
+//   const betaSpan = document.querySelector("#beta");
+//   const gammaSpan = document.querySelector("#gamma");
+
+//   alphaSpan.textContent = event.alpha.toFixed(2);
+//   betaSpan.textContent = event.beta.toFixed(2);
+//   gammaSpan.textContent = event.gamma.toFixed(2);
+// };
+
+const maxSpeed = 6;
+
+const handleOrientation = (event) => {
+  const maxTilt = 30; // Maximum tilt angle to avoid too much speed
+
+  const mazeTiltX = (event.gamma / maxTilt) * maxSpeed; // gamma is the left-to-right tilt
+  const mazeTiltY = (event.beta / maxTilt) * maxSpeed; // beta is the front-to-back tilt
 
   balls.forEach(ball => {
-    ball.dx = mazeTiltX;
-    ball.dy = mazeTiltY;
+    ball.dx = Math.max(-maxSpeed, Math.min(maxSpeed, mazeTiltX));
+    ball.dy = Math.max(-maxSpeed, Math.min(maxSpeed, mazeTiltY));
   });
 
   canvas.style.transform = `rotateY(${event.gamma}deg) rotateX(${-event.beta}deg)`;
@@ -276,6 +366,7 @@ const handleOrientation = (event) => {
   betaSpan.textContent = event.beta.toFixed(2);
   gammaSpan.textContent = event.gamma.toFixed(2);
 };
+
 
 const onClick = () => {
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
