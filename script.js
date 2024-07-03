@@ -256,29 +256,6 @@ const draw = () => {
   detectBallCollisions();
   requestAnimationFrame(draw);
 };
-
-// const handleOrientation = (event) => {
-//   const maxTilt = 30; // Maximum tilt angle to avoid too much speed
-  
-//   const mazeTiltX = (event.gamma / maxTilt) * 5; // gamma is the left-to-right tilt
-//   const mazeTiltY = (event.beta / maxTilt) * 5; // beta is the front-to-back tilt
-
-//   balls.forEach(ball => {
-//     ball.dx = mazeTiltX;
-//     ball.dy = mazeTiltY;
-//   });
-
-//   canvas.style.transform = `rotateY(${event.gamma}deg) rotateX(${-event.beta}deg)`;
-
-//   const alphaSpan = document.querySelector("#alpha");
-//   const betaSpan = document.querySelector("#beta");
-//   const gammaSpan = document.querySelector("#gamma");
-
-//   alphaSpan.textContent = event.alpha.toFixed(2);
-//   betaSpan.textContent = event.beta.toFixed(2);
-//   gammaSpan.textContent = event.gamma.toFixed(2);
-// };
-
 const maxSpeed = 6;
 
 const handleOrientation = (event) => {
