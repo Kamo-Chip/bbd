@@ -120,8 +120,16 @@ const dampingFactor = 0.5;
 
 const updateBallsPosition = (xTilt, yTilt) => {
   users.forEach((ball, idx) => {
-    let nextX = ball.x + xTilt;
-    let nextY = ball.y + yTilt;
+    // Update velocity based on tilt
+    ball.dx += xTilt;
+    ball.dy += yTilt;
+
+    // Apply damping factor to velocity
+    ball.dx *= dampingFactor;
+    ball.dy *= dampingFactor;
+
+    let nextX = ball.x + ball.dx;
+    let nextY = ball.y + ball.dy;
 
     // Prevent ball from moving out of canvas
     if (nextX < ball.radius) nextX = ball.radius;
@@ -139,42 +147,42 @@ const updateBallsPosition = (xTilt, yTilt) => {
       if (cell) {
         // Collision with top wall
         if (
-          yTilt < 0 &&
+          ball.dy < 0 &&
           cell.walls.top &&
           nextY - ball.radius < row * cellSize
         ) {
           nextY = row * cellSize + ball.radius;
-          ball.dy = -yTilt * dampingFactor;
+          ball.dy = -ball.dy;
         }
 
         // Collision with bottom wall
         if (
-          yTilt > 0 &&
+          ball.dy > 0 &&
           cell.walls.bottom &&
           nextY + ball.radius > (row + 1) * cellSize
         ) {
           nextY = (row + 1) * cellSize - ball.radius;
-          ball.dy = -yTilt * dampingFactor;
+          ball.dy = -ball.dy;
         }
 
         // Collision with left wall
         if (
-          xTilt < 0 &&
+          ball.dx < 0 &&
           cell.walls.left &&
           nextX - ball.radius < col * cellSize
         ) {
           nextX = col * cellSize + ball.radius;
-          ball.dx = xTilt * dampingFactor;
+          ball.dx = -ball.dx;
         }
 
         // Collision with right wall
         if (
-          xTilt > 0 &&
+          ball.dx > 0 &&
           cell.walls.right &&
           nextX + ball.radius > (col + 1) * cellSize
         ) {
           nextX = (col + 1) * cellSize - ball.radius;
-          ball.dx = xTilt * dampingFactor;
+          ball.dx = -ball.dx;
         }
       }
     }
@@ -207,6 +215,7 @@ const updateBallsPosition = (xTilt, yTilt) => {
         }
       }
     }
+
     ball.x = nextX;
     ball.y = nextY;
     users[idx] = ball;
