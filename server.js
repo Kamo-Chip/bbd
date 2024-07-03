@@ -234,7 +234,6 @@ const tiltValues = {};
 
 io.on("connection", (socket) => {
   console.log("User connected: ", socket.id);
-
   socket.emit("assignID", socket.id);
 
   socket.on("genMaze", () => {
@@ -252,13 +251,12 @@ io.on("connection", (socket) => {
   socket.on("join", () => {
     users.push({ ...balls[users.length], id: socket.id });
     socket.emit("assignColor", balls[users.length - 1].color);
+    console.log("Users: ", users);
     io.emit("plotPlayers", users);
   });
 
   socket.on("tilt", (data) => {
-    console.log(isGameStarted);
     if (isGameStarted) {
-      console.log(data);
       const { playerId, xTilt, yTilt, beta, gamma } = data;
       tiltValues[playerId] = { xTilt, yTilt, beta, gamma };
 
@@ -290,7 +288,7 @@ io.on("connection", (socket) => {
 
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
-
+    console.log("Users: ", users);
     users = users.filter((user) => user.id !== socket.id);
     socket.broadcast.emit("plotPlayers", users);
   });

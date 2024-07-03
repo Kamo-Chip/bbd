@@ -44,7 +44,7 @@ class Cell {
       if (this.walls.bottom)
         pen.moveTo(x + cellSize, y + cellSize), pen.lineTo(x, y + cellSize);
       if (this.walls.left) pen.moveTo(x, y + cellSize), pen.lineTo(x, y);
-      pen.strokeStyle = "green";
+      pen.strokeStyle = "black";
       pen.lineWidth = 2;
       pen.lineCap = "round";
       pen.stroke();
@@ -145,11 +145,12 @@ socket.on("assignID", (data) => {
 
 socket.on("assignColor", (data) => {
   color = data;
-  document.querySelector("#playerColor").textContent = data;
+  document.querySelector("#playerColor").textContent = `You are ` + data;
 });
 
 socket.on("announceWinner", (data) => {
   alert(`Winner:  ${data.color}`);
+  location.reload();
 });
 
 joinButton.addEventListener("click", () => {
