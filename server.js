@@ -115,7 +115,7 @@ function genMaze(x, y) {
 // Initialize the maze
 setup();
 
-const dampingFactor = 0;
+const dampingFactor = 0.5;
 
 const updateBallsPosition = (xTilt, yTilt) => {
   users.forEach((ball, idx) => {
