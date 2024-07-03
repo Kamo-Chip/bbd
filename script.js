@@ -282,9 +282,9 @@ joinButton.addEventListener("click", () => {
 
 socket.on("plotPlayers", (data) => {
   balls = data;
-  balls.forEach((ball) => {
-    drawBall(ball);
-  });
+  // balls.forEach((ball) => {
+  //   drawBall(ball);
+  // });
 });
 
 socket.on("gameStarted", () => {
