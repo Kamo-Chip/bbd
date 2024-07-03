@@ -120,6 +120,7 @@ io.on("connection", (socket) => {
 
   socket.on("join", () => {
     users.push({ ...balls[users.length], id: socket.id });
+    console.log(users);
     io.emit("plotPlayers", users);
   });
 
