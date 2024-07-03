@@ -7,6 +7,16 @@ const socket = io();
 
 // Define the balls with unique initial positions and colors
 let balls = [];
+const userName = localStorage.getItem('userName');
+const selectedColor = localStorage.getItem('selectedColor');
+
+const ball = {
+  x: 20,
+  y: 20,
+  radius: 10,
+  dx: 0,
+  dy: 0,
+};
 
 const hole = {
   x: 300 - 10,
@@ -14,6 +24,19 @@ const hole = {
   radius: 7,
   color: "black",
 };
+
+if (userName && selectedColor) {
+  // Display user info
+  document.getElementById('userName').innerHTML = `Username: <strong>${userName}</strong>`;
+  document.getElementById('userColor').innerHTML = `Color: <strong>${selectedColor}</strong>`;
+
+  // Optionally, use the color in the game
+    ball.color = selectedColor;
+  
+  // Clear localStorage
+  localStorage.removeItem('userName');
+  localStorage.removeItem('selectedColor');
+}
 
 const cellSize = 20;
 const cols = Math.floor(300 / cellSize);
@@ -39,8 +62,8 @@ class Cell {
       if (this.walls.bottom)
         pen.moveTo(x + cellSize, y + cellSize), pen.lineTo(x, y + cellSize);
       if (this.walls.left) pen.moveTo(x, y + cellSize), pen.lineTo(x, y);
-      pen.strokeStyle = "green";
-      pen.lineWidth = 2;
+      pen.strokeStyle = "black";
+      pen.lineWidth = 2.5;
       pen.lineCap = "round";
       pen.stroke();
     }

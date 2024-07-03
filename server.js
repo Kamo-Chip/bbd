@@ -18,7 +18,16 @@ const balls = [
 ];
 app.use(express.static(__dirname));
 
+
 const PORT = 3000;
+
+app.get('/', function(req, res) {
+  res.sendfile('index.html');
+});
+
+app.get('/menu', function(req, res) {
+ res.sendfile('home.html');
+});
 
 const cellSize = 20;
 const cols = Math.floor(300 / cellSize); // Adjust based on canvas width
