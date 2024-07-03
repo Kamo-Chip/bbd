@@ -1,49 +1,45 @@
+// game.js
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 const startButton = document.getElementById("startButton");
-const joinButton = document.getElementById("joinButton");
-
 const socket = io();
 
-// Define the balls with unique initial positions and colors
-let balls = [];
+const isHard = false;
+let players = {};
 
 const hole = {
-  x: 300 - 10,
-  y: 300 - 10,
-  radius: 7,
+  x: canvas.width - 20,
+  y: canvas.height - 20,
+  radius: 16,
   color: "black",
 };
 
-const cellSize = 20;
-const cols = Math.floor(300 / cellSize);
-const rows = Math.floor(300 / cellSize);
-let cells = [];
-const pen = canvas.getContext("2d");
+const cellSize = 40;
+const cols = Math.floor(canvas.width / cellSize);
+const rows = Math.floor(canvas.height / cellSize);
+const cells = [];
+const pen = canvas.getContext('2d');
 
 class Cell {
-  constructor(x, y, walls) {
+  constructor(x, y) {
     this.x = x;
     this.y = y;
-    this.walls = walls;
+    this.visited = false;
+    this.walls = { top: true, right: true, bottom: true, left: true };
   }
 
   show() {
-    if (this.walls) {
-      const x = this.x * cellSize;
-      const y = this.y * cellSize;
-      pen.beginPath();
-      if (this.walls.top) pen.moveTo(x, y), pen.lineTo(x + cellSize, y);
-      if (this.walls.right)
-        pen.moveTo(x + cellSize, y), pen.lineTo(x + cellSize, y + cellSize);
-      if (this.walls.bottom)
-        pen.moveTo(x + cellSize, y + cellSize), pen.lineTo(x, y + cellSize);
-      if (this.walls.left) pen.moveTo(x, y + cellSize), pen.lineTo(x, y);
-      pen.strokeStyle = "green";
-      pen.lineWidth = 2;
-      pen.lineCap = "round";
-      pen.stroke();
-    }
+    const x = this.x * cellSize;
+    const y = this.y * cellSize;
+    pen.beginPath();
+    if (this.walls.top) pen.moveTo(x, y), pen.lineTo(x + cellSize, y);
+    if (this.walls.right) pen.moveTo(x + cellSize, y), pen.lineTo(x + cellSize, y + cellSize);
+    if (this.walls.bottom) pen.moveTo(x + cellSize, y + cellSize), pen.lineTo(x, y + cellSize);
+    if (this.walls.left) pen.moveTo(x, y + cellSize), pen.lineTo(x, y);
+    pen.strokeStyle = 'black';
+    pen.lineWidth = 5;
+    pen.lineCap = 'round';
+    pen.stroke();
   }
 }
 
@@ -52,6 +48,50 @@ function setup() {
     cells[x] = [];
     for (let y = 0; y < rows; y++) {
       cells[x][y] = new Cell(x, y);
+    }
+  }
+  genMaze(0, 0);
+}
+
+function genMaze(x, y) {
+  const stack = [];
+  const directions = ['top', 'right', 'bottom', 'left'];
+  const getNewCoords = (x, y, dir) => {
+    switch (dir) {
+      case 'top': return [x, y - 1];
+      case 'right': return [x + 1, y];
+      case 'bottom': return [x, y + 1];
+      case 'left': return [x - 1, y];
+    }
+  };
+
+  const removeWalls = (current, next, dir) => {
+    current.walls[dir] = false;
+    const opposite = { top: 'bottom', right: 'left', bottom: 'top', left: 'right' };
+    next.walls[opposite[dir]] = false;
+  };
+
+  const startCell = cells[x][y];
+  startCell.visited = true;
+  stack.push(startCell);
+
+  while (stack.length) {
+    const current = stack[stack.length - 1];
+    const [cx, cy] = [current.x, current.y];
+    const unvisitedNeighbors = directions
+      .map(dir => {
+        const [nx, ny] = getNewCoords(cx, cy, dir);
+        return (nx >= 0 && ny >= 0 && nx < cols && ny < rows && !cells[nx][ny].visited) ? { dir, cell: cells[nx][ny] } : null;
+      })
+      .filter(Boolean);
+
+    if (unvisitedNeighbors.length) {
+      const { dir, cell } = unvisitedNeighbors[Math.floor(Math.random() * unvisitedNeighbors.length)];
+      removeWalls(current, cell, dir);
+      cell.visited = true;
+      stack.push(cell);
+    } else {
+      stack.pop();
     }
   }
 }
@@ -78,9 +118,9 @@ const updateBallPosition = (ball) => {
 
   // Prevent ball from moving out of canvas
   if (nextX < ball.radius) nextX = ball.radius;
-  if (nextX > 300 - ball.radius) nextX = 300 - ball.radius;
+  if (nextX > canvas.width - ball.radius) nextX = canvas.width - ball.radius;
   if (nextY < ball.radius) nextY = ball.radius;
-  if (nextY > 300 - ball.radius) nextY = 300 - ball.radius;
+  if (nextY > canvas.height - ball.radius) nextY = canvas.height - ball.radius;
 
   // Check for collision with walls
   const col = Math.floor(nextX / cellSize);
@@ -91,41 +131,25 @@ const updateBallPosition = (ball) => {
 
     if (cell) {
       // Collision with top wall
-      if (
-        ball.dy < 0 &&
-        cell.walls.top &&
-        nextY - ball.radius < row * cellSize
-      ) {
+      if (ball.dy < 0 && cell.walls.top && nextY - ball.radius < row * cellSize) {
         nextY = row * cellSize + ball.radius;
         ball.dy = 0;
       }
 
       // Collision with bottom wall
-      if (
-        ball.dy > 0 &&
-        cell.walls.bottom &&
-        nextY + ball.radius > (row + 1) * cellSize
-      ) {
+      if (ball.dy > 0 && cell.walls.bottom && nextY + ball.radius > (row + 1) * cellSize) {
         nextY = (row + 1) * cellSize - ball.radius;
         ball.dy = 0;
       }
 
       // Collision with left wall
-      if (
-        ball.dx < 0 &&
-        cell.walls.left &&
-        nextX - ball.radius < col * cellSize
-      ) {
+      if (ball.dx < 0 && cell.walls.left && nextX - ball.radius < col * cellSize) {
         nextX = col * cellSize + ball.radius;
         ball.dx = 0;
       }
 
       // Collision with right wall
-      if (
-        ball.dx > 0 &&
-        cell.walls.right &&
-        nextX + ball.radius > (col + 1) * cellSize
-      ) {
+      if (ball.dx > 0 && cell.walls.right && nextX + ball.radius > (col + 1) * cellSize) {
         nextX = (col + 1) * cellSize - ball.radius;
         ball.dx = 0;
       }
@@ -137,12 +161,12 @@ const updateBallPosition = (ball) => {
 
   // Check if ball is in the hole
   if (isBallInHole(ball)) {
-    socket.emit(`${ball.color} wins!`);
-    // alert("You win!");
-    //resetGame();
+    if (!ball.isWinner) {
+      ball.isWinner = true;
+      alert(`${ball.color} wins!`);
+      resetGame();
+    }
   }
-
-  socket.emit("ballMove", ball);
 };
 
 const isBallInHole = (ball) => {
@@ -154,35 +178,33 @@ const isBallInHole = (ball) => {
 };
 
 const resetGame = () => {
-  const initCoords = [
-    { x: 10, y: 10 },
-    { x: 290, y: 10 },
-    { x: 10, y: 290 },
-    { x: 150, y: 10 },
+  // Define the predefined positions of the balls
+  const initialPositions = [
+    { x: 20, y: 20 },
+    { x: 580, y: 20 },
+    { x: 20, y: 580 },
+    { x: 300, y: 20 }
   ];
 
-  balls.forEach((ball, idx) => {
-    ball.x = initCoords[idx].x;
-    ball.y = initCoords[idx].y;
-    ball.dx = 0;
-    ball.dy = 0;
+  // Reset each ball's position, velocity, and win status
+  Object.keys(players).forEach((id, index) => {
+    players[id].x = initialPositions[index].x;
+    players[id].y = initialPositions[index].y;
+    players[id].dx = 0;
+    players[id].dy = 0;
+    players[id].isWinner = false;
   });
-  setup();
-};
 
-const plotGrid = () => {
-  for (let x = 0; x < cols; x++) {
-    for (let y = 0; y < rows; y++) {
-      cells[x][y].show();
-    }
-  }
+  setup();
+  socket.emit('updatePlayers', players); // Notify server of reset
 };
 
 const detectBallCollisions = () => {
-  for (let i = 0; i < balls.length; i++) {
-    for (let j = i + 1; j < balls.length; j++) {
-      const ball1 = balls[i];
-      const ball2 = balls[j];
+  const ballArray = Object.values(players);
+  for (let i = 0; i < ballArray.length; i++) {
+    for (let j = i + 1; j < ballArray.length; j++) {
+      const ball1 = ballArray[i];
+      const ball2 = ballArray[j];
       const dx = ball2.x - ball1.x;
       const dy = ball2.y - ball1.y;
       const distance = Math.sqrt(dx * dx + dy * dy);
@@ -216,24 +238,19 @@ const detectBallCollisions = () => {
   }
 };
 
-// const draw = () => {
-//   ctx.clearRect(0, 0, 300, 300);
-//   plotGrid();
-//   drawHole();
-//   balls.forEach((ball) => drawBall(ball));
-//   balls.forEach((ball) => updateBallPosition(ball));
-//   detectBallCollisions();
-//   requestAnimationFrame(draw);
-// };
-
 const draw = () => {
-  ctx.clearRect(0, 0, 300, 300);
-  plotGrid();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let x = 0; x < cols; x++) {
+    for (let y = 0; y < rows; y++) {
+      cells[x][y].show();
+    }
+  }
   drawHole();
-  balls.forEach((ball) => drawBall(ball));
+  Object.values(players).forEach(ball => drawBall(ball));
+  Object.values(players).forEach(ball => updateBallPosition(ball));
+  detectBallCollisions();
   requestAnimationFrame(draw);
 };
-
 
 const maxSpeed = 6;
 
@@ -243,15 +260,14 @@ const handleOrientation = (event) => {
   const mazeTiltX = (event.gamma / maxTilt) * maxSpeed; // gamma is the left-to-right tilt
   const mazeTiltY = (event.beta / maxTilt) * maxSpeed; // beta is the front-to-back tilt
 
-  balls.forEach(ball => {
+  Object.values(players).forEach(ball => {
     ball.dx = Math.max(-maxSpeed, Math.min(maxSpeed, mazeTiltX));
     ball.dy = Math.max(-maxSpeed, Math.min(maxSpeed, mazeTiltY));
-    socket.emit("ballMove", ball);
   });
 
+  socket.emit('movePlayer', { dx: mazeTiltX, dy: mazeTiltY });
+
   canvas.style.transform = `rotateY(${event.gamma}deg) rotateX(${-event.beta}deg)`;
-
-
 
   const alphaSpan = document.querySelector("#alpha");
   const betaSpan = document.querySelector("#beta");
@@ -262,7 +278,7 @@ const handleOrientation = (event) => {
   gammaSpan.textContent = event.gamma.toFixed(2);
 };
 
-const getDeviceOrientation = () => {
+const onClick = () => {
   if (typeof DeviceOrientationEvent.requestPermission === "function") {
     // Handle iOS 13+ devices.
     DeviceOrientationEvent.requestPermission()
@@ -281,34 +297,15 @@ const getDeviceOrientation = () => {
 };
 
 startButton.addEventListener("click", () => {
-  socket.emit("startGame");
+  onClick();
+  resetGame();
+  draw();
 });
 
-joinButton.addEventListener("click", () => {
-  getDeviceOrientation();
-  socket.emit("join");
-});
-
-socket.on("plotPlayers", (data) => {
-  balls = data;
-});
-
-
-socket.on("gameStarted", () => {
-  startButton.style.display = "none";
-});
-
-socket.on("joinDenied", () => {
-  console.log("Game has already started");
-});
-
-socket.on("grid", (data) => {
-  data.forEach((cell, colNum) => {
-    cell.map((entry, rowNum) => {
-      cells[rowNum][colNum] = new Cell(entry.x, entry.y, entry.walls);
-    });
-  });
-});
 // Initial setup
 setup();
 draw();
+
+socket.on('updatePlayers', (data) => {
+  players = data;
+});
