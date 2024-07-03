@@ -3,7 +3,7 @@ const ctx = canvas.getContext("2d");
 const startButton = document.getElementById("startButton");
 const joinButton = document.getElementById("joinButton");
 
-const socket = io();
+const socket = io(process.env.VERCEL_URL || "http://localhost:3000");
 
 // Define the balls with unique initial positions and colors
 let balls = [];
