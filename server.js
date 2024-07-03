@@ -237,14 +237,6 @@ io.on("connection", (socket) => {
     io.emit("plotPlayers", users);
   });
 
-  // socket.on("ballMove", (data) => {
-  //   console.log(data);
-  //   // Update the user data for the moving ball
-  //   users = users.map((user) => (user.id === data.id ? data : user));
-  //   // Emit the updated user list to all clients
-  //   io.emit("plotPlayers", users);
-  // });
-
   socket.on("tilt", (data) => {
     console.log(data);
     updateBallsPosition(data.xTilt, data.yTilt);

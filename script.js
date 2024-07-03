@@ -97,6 +97,7 @@ const plotGrid = () => {
   }
 };
 
+const fps = 60;
 const draw = () => {
   ctx.clearRect(0, 0, 300, 300);
   plotGrid();
@@ -104,7 +105,9 @@ const draw = () => {
 
   balls.forEach((ball) => drawBall(ball));
 
-  requestAnimationFrame(draw);
+  setTimeout(() => {
+    requestAnimationFrame(draw);
+  }, 1000 / fps);
 };
 
 const speedFactor = 2;
