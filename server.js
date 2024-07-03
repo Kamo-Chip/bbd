@@ -120,6 +120,7 @@ io.on("connection", (socket) => {
 
   socket.on("join", () => {
     users.push({ ...balls[users.length], id: socket.id });
+    console.log(users);
     io.emit("plotPlayers", users);
   });
 
@@ -129,14 +130,14 @@ io.on("connection", (socket) => {
     users = users.map((user) => (user.id === data.id ? data : user));
 
     // Emit the updated user list to all clients
-    io.emit("plotPlayers", users);
+    io.emit("plotPlayers", users); // Emit to all clients, not just broadcast
   });
 
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
 
     users = users.filter((user) => user.id !== socket.id);
-    socket.broadcast.emit("plotPlayers", users);
+    io.emit("plotPlayers", users); // Emit to all clients
   });
 });
 

@@ -277,11 +277,15 @@ startButton.addEventListener("click", () => {
 
 joinButton.addEventListener("click", () => {
   getDeviceOrientation();
+  joinButton.style.display = "none";
+  console.log(".fdsfsd");
   socket.emit("join");
 });
 
 socket.on("plotPlayers", (data) => {
   balls = data;
+  console.log(data);
+  console.log(balls);
   // balls.forEach((ball) => {
   //   drawBall(ball);
   // });
