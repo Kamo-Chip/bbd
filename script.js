@@ -277,6 +277,8 @@ startButton.addEventListener("click", () => {
 
 joinButton.addEventListener("click", () => {
   getDeviceOrientation();
+  joinButton.style.display = "none";
+  console.log(".fdsfsd");
   socket.emit("join");
 });
 
