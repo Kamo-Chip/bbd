@@ -243,6 +243,12 @@ io.on("connection", (socket) => {
     io.emit("plotPlayers", users);
   });
 
+  // socket.on("ballMove", (data) => {
+  //   users = users.map((user) =>
+  //     user.id === data.id ? { ...data } : user
+  //   );
+  // });
+
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
   });
