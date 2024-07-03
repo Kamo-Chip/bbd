@@ -154,7 +154,7 @@ socket.on("assignColor", (data) => {
 });
 
 socket.on("announceWinner", (data) => {
-  alert(`${data.userName ?? data.color} wins (${data.color})`);
+  alert(`${data.userName ?? data.color} (${data.color}) wins!`);
   localStorage.clear();
   location.reload();
 });

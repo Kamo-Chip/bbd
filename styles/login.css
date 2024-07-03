@@ -21,17 +21,6 @@ body {
     "Lucida Sans Unicode", Geneva, Verdana, sans-serif;
 }
 
-@keyframes gradient {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
 .container {
   display: flex;
   flex-direction: column;
@@ -42,7 +31,9 @@ body {
   border-radius: 10px;
   background-color: #f0f0f0;
   z-index: 100;
+  max-width: 90vw;
 }
+
 .form-group {
   display: grid;
   grid-template-columns: 2fr 3fr;
@@ -85,6 +76,7 @@ input {
   border: solid 2px #000;
   border-radius: 5px;
   font-size: 18px;
+  padding: .25rem;
 }
 
 input:focus {

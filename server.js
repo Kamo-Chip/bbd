@@ -253,6 +253,7 @@ const checkWin = () => {
     if (isBallInHole(user)) {
       isGameStarted = false;
       io.emit("announceWinner", user);
+      io.disconnectSockets();
     }
   });
 };
@@ -263,7 +264,7 @@ io.on("connection", (socket) => {
   console.log("User connected: ", socket.id);
   socket.emit("assignID", socket.id);
 
-  console.log();
+  console.log(io.engine.clientsCount);
   socket.emit("assignHost", io.engine.clientsCount === 1 ? true : false);
 
   socket.on("genMaze", () => {
