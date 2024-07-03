@@ -167,6 +167,7 @@ socket.on("plotPlayers", (data) => {
 socket.on("gameStarted", () => {
   startButton.style.display = "none";
   genMazeButton.style.display = "none";
+  joinButton.style.display = "none";
 });
 
 socket.on("grid", (data) => {
