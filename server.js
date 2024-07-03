@@ -1,51 +1,149 @@
-const express = require('express');
-const http = require('http');
-const socketIo = require('socket.io');
-const path = require('path');
+const express = require("express");
+const http = require("http");
+const socketIo = require("socket.io");
 
 const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-app.use(express.static(path.join(__dirname, 'public')));
+let hasGameStarted = false;
 
-let balls = [
-  { x: 20, y: 20, radius: 10, color: "blue", dx: 0, dy: 0, isWinner: false },
-  { x: 580, y: 20, radius: 10, color: "red", dx: 0, dy: 0, isWinner: false },
-  { x: 20, y: 580, radius: 10, color: "yellow", dx: 0, dy: 0, isWinner: false },
-  { x: 300, y: 20, radius: 10, color: "green", dx: 0, dy: 0, isWinner: false },
+let users = [];
+// Define the balls with unique initial positions and colors
+const balls = [
+  { x: 10, y: 10, radius: 5, color: "blue", dx: 0, dy: 0 },
+  { x: 290, y: 10, radius: 5, color: "red", dx: 0, dy: 0 },
+  { x: 10, y: 290, radius: 5, color: "yellow", dx: 0, dy: 0 },
+  { x: 150, y: 10, radius: 5, color: "green", dx: 0, dy: 0 },
 ];
+app.use(express.static(__dirname));
 
-io.on('connection', (socket) => {
-  console.log('New client connected');
+const PORT = 3000;
 
-  // Send initial game state
-  socket.emit('init', { balls });
+const cellSize = 20;
+const cols = Math.floor(300 / cellSize); // Adjust based on canvas width
+const rows = Math.floor(300 / cellSize); // Adjust based on canvas height
+let cells = [];
 
-  // Handle ball updates
-  socket.on('updateBall', (updatedBall) => {
-    const ballIndex = balls.findIndex(ball => ball.color === updatedBall.color);
-    if (ballIndex !== -1) {
-      balls[ballIndex] = updatedBall;
-      io.emit('updateBall', updatedBall); // Broadcast updated ball state to all clients
+class Cell {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.visited = false;
+    this.walls = { top: true, right: true, bottom: true, left: true };
+  }
+}
+
+function setup() {
+  for (let x = 0; x < cols; x++) {
+    cells[x] = [];
+    for (let y = 0; y < rows; y++) {
+      cells[x][y] = new Cell(x, y);
     }
+  }
+  genMaze(0, 0);
+}
+
+function genMaze(x, y) {
+  const stack = [];
+  const directions = ["top", "right", "bottom", "left"];
+  const getNewCoords = (x, y, dir) => {
+    switch (dir) {
+      case "top":
+        return [x, y - 1];
+      case "right":
+        return [x + 1, y];
+      case "bottom":
+        return [x, y + 1];
+      case "left":
+        return [x - 1, y];
+    }
+  };
+
+  const removeWalls = (current, next, dir) => {
+    current.walls[dir] = false;
+    const opposite = {
+      top: "bottom",
+      right: "left",
+      bottom: "top",
+      left: "right",
+    };
+    next.walls[opposite[dir]] = false;
+  };
+
+  const startCell = cells[x][y];
+  startCell.visited = true;
+  stack.push(startCell);
+
+  while (stack.length) {
+    const current = stack[stack.length - 1];
+    const [cx, cy] = [current.x, current.y];
+    const unvisitedNeighbors = directions
+      .map((dir) => {
+        const [nx, ny] = getNewCoords(cx, cy, dir);
+        return nx >= 0 &&
+          ny >= 0 &&
+          nx < cols &&
+          ny < rows &&
+          !cells[nx][ny].visited
+          ? { dir, cell: cells[nx][ny] }
+          : null;
+      })
+      .filter(Boolean);
+
+    if (unvisitedNeighbors.length) {
+      const { dir, cell } =
+        unvisitedNeighbors[
+          Math.floor(Math.random() * unvisitedNeighbors.length)
+        ];
+      removeWalls(current, cell, dir);
+      cell.visited = true;
+      stack.push(cell);
+    } else {
+      stack.pop();
+    }
+  }
+}
+
+// Initialize the maze
+setup();
+
+io.on("connection", (socket) => {
+  console.log("User connected: ", socket.id);
+
+  io.emit("grid", cells);
+
+  socket.on("startGame", () => {
+    hasGameStarted = true;
+    io.emit("gameStarted");
   });
 
-  // Handle game reset
-  socket.on('resetGame', () => {
-    balls = [
-      { x: 20, y: 20, radius: 10, color: "blue", dx: 0, dy: 0, isWinner: false },
-      { x: 580, y: 20, radius: 10, color: "red", dx: 0, dy: 0, isWinner: false },
-      { x: 20, y: 580, radius: 10, color: "yellow", dx: 0, dy: 0, isWinner: false },
-      { x: 300, y: 20, radius: 10, color: "green", dx: 0, dy: 0, isWinner: false },
-    ];
-    io.emit('resetGame', balls); // Broadcast reset game state to all clients
+  socket.on("join", () => {
+    users.push({ ...balls[users.length], id: users.length });
+
+    io.emit("plotPlayers", users);
   });
 
-  socket.on('disconnect', () => {
-    console.log('Client disconnected');
+  socket.on("ballMove", (data) => {
+    console.log(data);
+
+    let updatedUsers = [];
+    users.forEach((user) => {
+      if (user.id === data.id) {
+        updatedUsers.push(data);
+      } else {
+        updatedUsers.push(user);
+      }
+    });
+
+    users = updatedUsers;
+
+    io.emit("plotPlayers", users);
+  });
+
+  socket.on("disconnect", () => {
+    console.log("Client disconnected:", socket.id);
   });
 });
 
-const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
