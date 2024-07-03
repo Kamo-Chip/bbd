@@ -28,7 +28,7 @@ const hole = {
 if (userName && selectedColor) {
   // Display user info
   document.getElementById('userName').innerHTML = `Username: <strong>${userName}</strong>`;
-  document.getElementById('userColor').innerHTML = `Color: <strong>${selectedColor}</strong>`;
+  document.getElementById('userColor').innerHTML = `Player-Color: <strong>${selectedColor}</strong>`;
 
   // Optionally, use the color in the game
     ball.color = selectedColor;

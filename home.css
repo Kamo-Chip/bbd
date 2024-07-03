@@ -38,14 +38,14 @@ body {
     padding: 10px 20px;
     border: none;
     border-radius: 5px;
-    background-color: #28a745;
+    background-color: #00585F;
     color: white;
     font-size: 16px;
     cursor: pointer;
 }
 
 .join button:hover {
-  background-color: #218838;
+  background-color: #005061;
 }
 
 .join{
@@ -53,3 +53,15 @@ body {
     align-items: center;
     justify-content: center;
 }
+
+@font-face {
+    font-family: myFirstFont;
+    src: url(RebellionSquad-ZpprZ.ttf);
+}
+    
+h2 {
+    font-family: myFirstFont;
+    font-size: 45px;
+    color: #00585F;
+}
+  
