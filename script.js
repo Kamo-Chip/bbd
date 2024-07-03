@@ -72,6 +72,7 @@ const drawHole = () => {
   ctx.closePath();
 };
 
+const dampingFactor = 0.1;
 const updateBallPosition = (ball) => {
   let nextX = ball.x + ball.dx;
   let nextY = ball.y + ball.dy;
@@ -97,7 +98,7 @@ const updateBallPosition = (ball) => {
         nextY - ball.radius < row * cellSize
       ) {
         nextY = row * cellSize + ball.radius;
-        ball.dy = 0;
+        ball.dy = -ball.dy * dampingFactor;
       }
 
       // Collision with bottom wall
@@ -107,7 +108,7 @@ const updateBallPosition = (ball) => {
         nextY + ball.radius > (row + 1) * cellSize
       ) {
         nextY = (row + 1) * cellSize - ball.radius;
-        ball.dy = 0;
+        ball.dy = -ball.dy * dampingFactor;
       }
 
       // Collision with left wall
@@ -117,7 +118,7 @@ const updateBallPosition = (ball) => {
         nextX - ball.radius < col * cellSize
       ) {
         nextX = col * cellSize + ball.radius;
-        ball.dx = 0;
+        ball.dx = ball.dx * dampingFactor;
       }
 
       // Collision with right wall
@@ -127,10 +128,12 @@ const updateBallPosition = (ball) => {
         nextX + ball.radius > (col + 1) * cellSize
       ) {
         nextX = (col + 1) * cellSize - ball.radius;
-        ball.dx = 0;
+        ball.dx = ball.dx * dampingFactor;
       }
     }
   }
+
+  const hasMoved = ball.x !== nextX && ball.y !== nextY;
 
   ball.x = nextX;
   ball.y = nextY;
@@ -138,11 +141,11 @@ const updateBallPosition = (ball) => {
   // Check if ball is in the hole
   if (isBallInHole(ball)) {
     socket.emit(`${ball.color} wins!`);
-    // alert("You win!");
-    //resetGame();
   }
 
-  socket.emit("ballMove", ball);
+  if (hasMoved) {
+    socket.emit("ballMove", ball);
+  }
 };
 
 const isBallInHole = (ball) => {
@@ -227,10 +230,10 @@ const draw = () => {
 };
 
 const handleOrientation = (event) => {
-  const maxTilt = 45; // Maximum tilt angle to avoid too much speed
+  const maxTilt = 30; // Maximum tilt angle to avoid too much speed
 
-  const mazeTiltX = (event.gamma / maxTilt) * 5; // gamma is the left-to-right tilt
-  const mazeTiltY = (event.beta / maxTilt) * 5; // beta is the front-to-back tilt
+  const mazeTiltX = event.gamma / maxTilt; // gamma is the left-to-right tilt
+  const mazeTiltY = event.beta / maxTilt; // beta is the front-to-back tilt
 
   balls.forEach((ball) => {
     ball.dx = mazeTiltX;
@@ -278,7 +281,6 @@ joinButton.addEventListener("click", () => {
 });
 
 socket.on("plotPlayers", (data) => {
-  console.log(data);
   balls = data;
   balls.forEach((ball) => {
     drawBall(ball);
@@ -289,14 +291,10 @@ socket.on("gameStarted", () => {
   startButton.style.display = "none";
 });
 
-socket.on("joinDenied", () => {
-  console.log("Game has already started");
-});
-
 socket.on("grid", (data) => {
   data.forEach((cell, colNum) => {
     cell.map((entry, rowNum) => {
-      cells[rowNum][colNum] = new Cell(entry.x, entry.y, entry.walls);
+      cells[colNum][rowNum] = new Cell(entry.x, entry.y, entry.walls);
     });
   });
 });

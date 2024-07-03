@@ -119,30 +119,24 @@ io.on("connection", (socket) => {
   });
 
   socket.on("join", () => {
-    users.push({ ...balls[users.length], id: users.length });
-
+    users.push({ ...balls[users.length], id: socket.id });
     io.emit("plotPlayers", users);
   });
 
   socket.on("ballMove", (data) => {
     console.log(data);
+    // Update the user data for the moving ball
+    users = users.map((user) => (user.id === data.id ? data : user));
 
-    let updatedUsers = [];
-    users.forEach((user) => {
-      if (user.id === data.id) {
-        updatedUsers.push(data);
-      } else {
-        updatedUsers.push(user);
-      }
-    });
-
-    users = updatedUsers;
-
+    // Emit the updated user list to all clients
     io.emit("plotPlayers", users);
   });
 
   socket.on("disconnect", () => {
     console.log("Client disconnected:", socket.id);
+
+    users = users.filter((user) => user.id !== socket.id);
+    socket.broadcast.emit("plotPlayers", users);
   });
 });
 
