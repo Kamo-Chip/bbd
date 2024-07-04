@@ -159,6 +159,10 @@ socket.on("announceWinner", (data) => {
   location.reload();
 });
 
+socket.on("reloadTab", () => {
+  location.reload();
+})
+
 socket.on("joinDenied", () => {
   alert("Game is full");
 });

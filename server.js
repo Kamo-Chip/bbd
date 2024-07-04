@@ -364,7 +364,12 @@ io.on("connection", (socket) => {
     console.log("Client disconnected:", socket.id);
     users = users.filter((user) => user.id !== socket.id);
     console.log("Users: ", users);
-
+    if (users.length === 0) {
+      isGameStarted = false;
+      isGameOver = true;
+      io.emit("reloadTab");
+      io.disconnectSockets();
+    }
     socket.broadcast.emit("plotPlayers", users);
   });
 });
