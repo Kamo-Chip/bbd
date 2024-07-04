@@ -343,14 +343,17 @@ io.on("connection", (socket) => {
 
       if (numPlayers === 4) {
         avgXTilt = maxXTilt;
-        avgYTilt = maxYTilt;
+        avgYTilt = maxYTilt; // Corrected here
         avgGamma = maxGamma;
         avgBeta = maxBeta;
-      } else {
+      } else if (numPlayers > 0) {
+        // Check to avoid division by zero
         avgXTilt = totalXTilt / numPlayers;
         avgYTilt = totalYTilt / numPlayers;
         avgGamma = totalGamma / numPlayers;
         avgBeta = totalBeta / numPlayers;
+      } else {
+        avgXTilt = avgYTilt = avgGamma = avgBeta = 0;
       }
 
       updateBallsPosition(avgXTilt, avgYTilt);
