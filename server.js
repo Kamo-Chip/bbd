@@ -308,7 +308,27 @@ io.on("connection", (socket) => {
       let totalBeta = 0;
       let numPlayers = 0;
 
+      let maxXTilt = 0;
+      let maxYTilt = 0;
+      let maxGamma = 0;
+      let maxBeta = 0;
+
       for (let id in tiltValues) {
+        if (maxXTilt < tiltValues[id].xTilt) {
+          maxXTilt = tiltValues[id].xTilt;
+        }
+        if (maxYTilt < tiltValues[id].yTilt) {
+          maxYTilt = tiltValues[id].yTilt;
+        }
+
+        if (maxGamma < tiltValues[id].gamma) {
+          maxGamma = tiltValues[id].gamma;
+        }
+
+        if (maxBeta < tiltValues[id].beta) {
+          maxBeta = tiltValues[id].beta;
+        }
+
         totalXTilt += tiltValues[id].xTilt;
         totalYTilt += tiltValues[id].yTilt;
         totalGamma += tiltValues[id].gamma;
@@ -316,10 +336,22 @@ io.on("connection", (socket) => {
         numPlayers++;
       }
 
-      const avgXTilt = totalXTilt / numPlayers;
-      const avgYTilt = totalYTilt / numPlayers;
-      const avgGamma = totalGamma / numPlayers;
-      const avgBeta = totalBeta / numPlayers;
+      let avgXTilt;
+      let avgYTilt;
+      let avgGamma;
+      let avgBeta;
+
+      if (numPlayers === 4) {
+        avgXTilt = maxXTilt;
+        avgYTilt = maxYTilt;
+        avgGamma = maxGamma;
+        avgBeta = maxBeta;
+      } else {
+        avgXTilt = totalXTilt / numPlayers;
+        avgYTilt = totalYTilt / numPlayers;
+        avgGamma = totalGamma / numPlayers;
+        avgBeta = totalBeta / numPlayers;
+      }
 
       updateBallsPosition(avgXTilt, avgYTilt);
       checkWin();
