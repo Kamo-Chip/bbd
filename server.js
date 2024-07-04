@@ -297,67 +297,91 @@ io.on("connection", (socket) => {
     io.emit("plotPlayers", users);
   });
 
-  socket.on("tilt", (data) => {
-    if (isGameStarted) {
-      const { playerId, xTilt, yTilt, beta, gamma } = data;
-      tiltValues[playerId] = { xTilt, yTilt, beta, gamma };
+  // socket.on("tilt", (data) => {
+  //   if (isGameStarted) {
+  //     const { playerId, xTilt, yTilt, beta, gamma } = data;
+  //     tiltValues[playerId] = { xTilt, yTilt, beta, gamma };
+
+  //     let totalXTilt = 0;
+  //     let totalYTilt = 0;
+  //     let totalGamma = 0;
+  //     let totalBeta = 0;
+  //     let numPlayers = 0;
+
+  //     let maxXTilt = 0;
+  //     let maxYTilt = 0;
+  //     let maxGamma = 0;
+  //     let maxBeta = 0;
+
+  //     for (let id in tiltValues) {
+  //       if (maxXTilt < tiltValues[id].xTilt) {
+  //         maxXTilt = tiltValues[id].xTilt;
+  //       }
+  //       if (maxYTilt < tiltValues[id].yTilt) {
+  //         maxYTilt = tiltValues[id].yTilt;
+  //       }
+
+  //       if (maxGamma < tiltValues[id].gamma) {
+  //         maxGamma = tiltValues[id].gamma;
+  //       }
+
+  //       if (maxBeta < tiltValues[id].beta) {
+  //         maxBeta = tiltValues[id].beta;
+  //       }
+
+  //       totalXTilt += tiltValues[id].xTilt;
+  //       totalYTilt += tiltValues[id].yTilt;
+  //       totalGamma += tiltValues[id].gamma;
+  //       totalBeta += tiltValues[id].beta;
+  //       numPlayers++;
+  //     }
+
+  //     let avgXTilt;
+  //     let avgYTilt;
+  //     let avgGamma;
+  //     let avgBeta;
+
+  //     if (numPlayers === 4) {
+  //       avgXTilt = maxXTilt;
+  //       avgYTilt = maxYTilt;
+  //       avgGamma = maxGamma;
+  //       avgBeta = maxBeta;
+  //     } else {
+  //       avgXTilt = totalXTilt / numPlayers;
+  //       avgYTilt = totalYTilt / numPlayers;
+  //       avgGamma = totalGamma / numPlayers;
+  //       avgBeta = totalBeta / numPlayers;
+  //     }
+
+  //     updateBallsPosition(avgXTilt, avgYTilt);
+  //     checkWin();
+  //     io.emit("tiltCanvas", { avgGamma, avgBeta });
+  //     io.emit("plotPlayers", users);
+  //   }
+  // });
+
+socket.on("tilt", (data) => {
+  if (isGameStarted) {
+      const { playerId, xTilt, yTilt } = data;
+      tiltValues[playerId] = { xTilt, yTilt };
 
       let totalXTilt = 0;
       let totalYTilt = 0;
-      let totalGamma = 0;
-      let totalBeta = 0;
       let numPlayers = 0;
 
-      let maxXTilt = 0;
-      let maxYTilt = 0;
-      let maxGamma = 0;
-      let maxBeta = 0;
-
       for (let id in tiltValues) {
-        if (maxXTilt < tiltValues[id].xTilt) {
-          maxXTilt = tiltValues[id].xTilt;
-        }
-        if (maxYTilt < tiltValues[id].yTilt) {
-          maxYTilt = tiltValues[id].yTilt;
-        }
-
-        if (maxGamma < tiltValues[id].gamma) {
-          maxGamma = tiltValues[id].gamma;
-        }
-
-        if (maxBeta < tiltValues[id].beta) {
-          maxBeta = tiltValues[id].beta;
-        }
-
         totalXTilt += tiltValues[id].xTilt;
         totalYTilt += tiltValues[id].yTilt;
-        totalGamma += tiltValues[id].gamma;
-        totalBeta += tiltValues[id].beta;
         numPlayers++;
       }
 
-      let avgXTilt;
-      let avgYTilt;
-      let avgGamma;
-      let avgBeta;
-
-      if (numPlayers === 4) {
-        avgXTilt = maxXTilt;
-        avgYTilt = maxYTilt;
-        avgGamma = maxGamma;
-        avgBeta = maxBeta;
-      } else {
-        avgXTilt = totalXTilt / numPlayers;
-        avgYTilt = totalYTilt / numPlayers;
-        avgGamma = totalGamma / numPlayers;
-        avgBeta = totalBeta / numPlayers;
-      }
+      const avgXTilt = totalXTilt / numPlayers;
+      const avgYTilt = totalYTilt / numPlayers;
 
       updateBallsPosition(avgXTilt, avgYTilt);
       checkWin();
-      io.emit("tiltCanvas", { avgGamma, avgBeta });
       io.emit("plotPlayers", users);
-    }
+  }
   });
 
   socket.on("disconnect", () => {
